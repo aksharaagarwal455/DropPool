@@ -1,16 +1,46 @@
 @import "tailwindcss";
 
+@theme {
+  --color-forest: #0F3D1E;
+  --color-forest-dark: #0A2914;
+  --color-forest-muted: #2D5A3C;
+  --color-lime-brand: #84CC16;
+  --color-lime-light: #A3E635;
+  --color-lime-soft: #ECFCCB;
+  --color-lime-tint: #F7FEE7;
+  --color-surface: #F8FAF6;
+  --color-card-green: #F0FDF4;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #FFF9F5;
-    color: #0F172A;
+    background-color: #F8FAF6;
+    color: #0F3D1E;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom scrollbars and transitions */
+/* Deck highlighter style for key words in headings */
+.highlight-lime {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.25rem;
+  z-index: 1;
+}
+.highlight-lime::before {
+  content: "";
+  position: absolute;
+  inset: 15% -0.15rem 10% -0.15rem;
+  background-color: #BEF264;
+  border-radius: 0.375rem;
+  transform: rotate(-1deg);
+  z-index: -1;
+  opacity: 0.85;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

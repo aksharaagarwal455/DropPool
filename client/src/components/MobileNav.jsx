@@ -50,7 +50,7 @@ export default function MobileNav() {
   ]
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#F1E8E2] px-2 py-1 shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2EBDD] px-2 py-1 shadow-lg">
       <div className="flex items-center justify-around">
         {items.map((item) => (
           <NavLink
@@ -60,15 +60,15 @@ export default function MobileNav() {
             className={({ isActive }) =>
               `flex flex-col items-center py-1.5 px-3 relative transition-colors ${
                 isActive
-                  ? 'text-[#4F46E5] font-semibold'
-                  : 'text-[#64748B] hover:text-[#0F172A]'
+                  ? 'text-[#15803D] font-bold'
+                  : 'text-[#64748B] hover:text-[#0F3D1E]'
               }`
             }
           >
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span className="absolute -top-1 left-2 right-2 h-[2.5px] bg-[#4F46E5] rounded-full" />
+                  <span className="absolute -top-1 left-2 right-2 h-[3px] bg-[#84CC16] rounded-full" />
                 )}
                 {item.icon(isActive)}
                 <span className="text-[11px] mt-0.5">{item.name}</span>

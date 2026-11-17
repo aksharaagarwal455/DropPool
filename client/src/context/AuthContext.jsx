@@ -1,72 +1,38 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { Api, getToken, setToken, clearToken, errorMessage } from '../lib/api'
-import avatarAanya from '../assets/avatar_aanya.png'
-import avatarKabir from '../assets/avatar_kabir.png'
-import avatarMeera from '../assets/avatar_meera.png'
 
 const AuthContext = createContext(null)
 
-export const DEMO_USERS = {
-  aanya: {
-    id: 'demo_aanya',
-    name: 'Aanya Rao',
-    email: 'aanya@iitb.ac.in',
-    hostel: 'Hostel 8',
-    block: 'A',
-    floor: '3',
-    room: '312',
-    campus: 'IIT Bombay',
-    profileImage: avatarAanya,
-    role: 'student',
-    emailVerified: true,
-    isDemo: true,
-    stats: {
-      totalSavings: 120,
-      runsJoined: 6,
-      deliveryMilesAvoided: 18,
-    },
-    preferences: {
-      defaultPlatform: 'blinkit',
-      deliveryWindow: 'Evenings · 7:00–7:30 pm',
-      pickupLocation: 'Hostel 8 common room',
-    },
-  },
-  kabir: {
-    id: 'demo_kabir',
-    name: 'Kabir Shah',
-    email: 'kabir@iitb.ac.in',
-    hostel: 'Hostel 8',
-    block: 'B',
-    floor: '2',
-    campus: 'IIT Bombay',
-    profileImage: avatarKabir,
-    role: 'student',
-    isDemo: true,
-  },
-  meera: {
-    id: 'demo_meera',
-    name: 'Meera Iyer',
-    email: 'meera@iitb.ac.in',
-    hostel: 'Hostel 8',
-    block: 'A',
-    floor: '2',
-    campus: 'IIT Bombay',
-    profileImage: avatarMeera,
-    role: 'student',
-    isDemo: true,
-  },
-}
+export const DEMO_PERSONAS = [
+  { key: 'aarav', name: 'Aarav Mehta', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
+  { key: 'diya', name: 'Diya Sharma', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
+  { key: 'kabir', name: 'Kabir Singh', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
+  { key: 'meera', name: 'Meera Iyer', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
+  { key: 'rohan', name: 'Rohan Das', hostel: 'Tagore C', platform: 'Instamart', role: 'Free delivery (reject)' },
+  { key: 'ishita', name: 'Ishita Nair', hostel: 'Tagore C', platform: 'Instamart', role: 'Free delivery (reject)' },
+  { key: 'vihaan', name: 'Vihaan Rao', hostel: 'Gargi A', platform: 'Blinkit', role: 'Independent' },
+  { key: 'sara', name: 'Sara Khan', hostel: 'Gargi B', platform: 'Blinkit', role: 'Host (awaiting payments)' },
+]
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(DEMO_USERS.aanya)
+  const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
+  const [meta, setMeta] = useState(null)
 
+  // Fetch meta on mount
+  useEffect(() => {
+    Api.meta()
+      .then((data) => setMeta(data))
+      .catch(() => {})
+  }, [])
+
+  // Verify current token
   const fetchCurrentUser = useCallback(async () => {
     const token = getToken()
     if (!token) {
-      setUser(DEMO_USERS.aanya)
+      setUser(null)
       setIsAuthenticated(false)
       setLoading(false)
       return
@@ -75,26 +41,16 @@ export function AuthProvider({ children }) {
     try {
       const data = await Api.me()
       if (data?.user) {
-        setUser({
-          ...data.user,
-          profileImage: data.user.profileImage || avatarAanya,
-          campus: 'IIT Bombay',
-          stats: {
-            totalSavings: 120,
-            runsJoined: 6,
-            deliveryMilesAvoided: 18,
-          },
-          preferences: {
-            defaultPlatform: 'blinkit',
-            deliveryWindow: 'Evenings · 7:00–7:30 pm',
-            pickupLocation: `${data.user.hostel || 'Hostel 8'} common room`,
-          },
-        })
+        setUser(data.user)
         setIsAuthenticated(true)
+      } else {
+        clearToken()
+        setUser(null)
+        setIsAuthenticated(false)
       }
     } catch {
-      // Backend unavailable or token expired; fallback cleanly to demo profile
-      setUser(DEMO_USERS.aanya)
+      clearToken()
+      setUser(null)
       setIsAuthenticated(false)
     } finally {
       setLoading(false)
@@ -105,7 +61,7 @@ export function AuthProvider({ children }) {
     fetchCurrentUser()
 
     const handleLogoutEvent = () => {
-      setUser(DEMO_USERS.aanya)
+      setUser(null)
       setIsAuthenticated(false)
     }
 
@@ -119,19 +75,9 @@ export function AuthProvider({ children }) {
       const res = await Api.login({ email, password })
       if (res?.token) {
         setToken(res.token)
-        setUser({
-          ...res.user,
-          profileImage: res.user.profileImage || avatarAanya,
-          campus: 'IIT Bombay',
-          stats: { totalSavings: 120, runsJoined: 6, deliveryMilesAvoided: 18 },
-          preferences: {
-            defaultPlatform: 'blinkit',
-            deliveryWindow: 'Evenings · 7:00–7:30 pm',
-            pickupLocation: `${res.user.hostel || 'Hostel 8'} common room`,
-          },
-        })
+        setUser(res.user)
         setIsAuthenticated(true)
-        return { success: true }
+        return { success: true, user: res.user }
       }
       return { success: false, error: 'Login failed' }
     } catch (err) {
@@ -147,19 +93,9 @@ export function AuthProvider({ children }) {
       const res = await Api.register(formData)
       if (res?.token) {
         setToken(res.token)
-        setUser({
-          ...res.user,
-          profileImage: res.user.profileImage || avatarAanya,
-          campus: 'IIT Bombay',
-          stats: { totalSavings: 0, runsJoined: 0, deliveryMilesAvoided: 0 },
-          preferences: {
-            defaultPlatform: 'blinkit',
-            deliveryWindow: 'Evenings · 7:00–7:30 pm',
-            pickupLocation: `${res.user.hostel} common room`,
-          },
-        })
+        setUser(res.user)
         setIsAuthenticated(true)
-        return { success: true }
+        return { success: true, user: res.user }
       }
       return { success: false, error: 'Registration failed' }
     } catch (err) {
@@ -171,33 +107,54 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     clearToken()
-    setUser(DEMO_USERS.aanya)
+    setUser(null)
     setIsAuthenticated(false)
   }
 
   const updateProfile = async (updates) => {
-    if (isAuthenticated) {
-      try {
-        const res = await Api.updateProfile(updates)
-        if (res?.user) {
-          setUser((prev) => ({ ...prev, ...res.user }))
-          return { success: true }
-        }
-      } catch (err) {
-        return { success: false, error: errorMessage(err) }
+    try {
+      const res = await Api.updateProfile(updates)
+      if (res?.user) {
+        setUser(res.user)
+        return { success: true, user: res.user }
       }
+      return { success: false, error: 'Update failed' }
+    } catch (err) {
+      return { success: false, error: errorMessage(err) }
     }
-    // Update local profile state in demo mode
-    setUser((prev) => ({ ...prev, ...updates }))
-    return { success: true }
   }
 
-  const switchDemoUser = (userKey) => {
-    if (DEMO_USERS[userKey]) {
-      clearToken()
-      setUser(DEMO_USERS[userKey])
-      setIsAuthenticated(false)
+  // Real login as seeded persona
+  const quickLogin = async (key) => {
+    setAuthError(null)
+    const email = `${key}@demo.droppool.test`
+    const password = 'demo-pass-123'
+    try {
+      const res = await Api.login({ email, password })
+      if (res?.token) {
+        setToken(res.token)
+        setUser(res.user)
+        setIsAuthenticated(true)
+        return { success: true, user: res.user }
+      }
+    } catch (err) {
+      // If demo accounts not seeded, attempt to seed once and retry
+      try {
+        await Api.admin.seedDemo()
+        const retry = await Api.login({ email, password })
+        if (retry?.token) {
+          setToken(retry.token)
+          setUser(retry.user)
+          setIsAuthenticated(true)
+          return { success: true, user: retry.user }
+        }
+      } catch {
+        const msg = errorMessage(err)
+        setAuthError(`Demo login failed: ${msg}. Make sure demo accounts are seeded.`)
+        return { success: false, error: msg }
+      }
     }
+    return { success: false, error: 'Demo login failed' }
   }
 
   return (
@@ -207,11 +164,12 @@ export function AuthProvider({ children }) {
         isAuthenticated,
         loading,
         authError,
+        meta,
         login,
         register,
         logout,
         updateProfile,
-        switchDemoUser,
+        quickLogin,
       }}
     >
       {children}

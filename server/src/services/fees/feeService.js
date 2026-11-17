@@ -10,8 +10,10 @@ function stripDoc(doc) {
 
 async function getProfile(platform) {
   if (!PLATFORMS.includes(platform)) return null
-  const doc = await FeeProfile.findOne({ platform }).lean()
-  if (doc) return { ...stripDoc(doc), updatedAt: doc.updatedAt }
+  if (FeeProfile.db?.readyState === 1) {
+    const doc = await FeeProfile.findOne({ platform }).lean()
+    if (doc) return { ...stripDoc(doc), updatedAt: doc.updatedAt }
+  }
   return { ...DEFAULT_PROFILES[platform], version: 0, isIllustrative: true }
 }
 

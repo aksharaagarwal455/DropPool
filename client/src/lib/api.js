@@ -41,6 +41,7 @@ const unwrap = (promise) => promise.then((r) => r.data.data)
 export const Api = {
   health: () => unwrap(http.get('/api/health')),
   meta: () => unwrap(http.get('/api/meta')),
+  metaFees: (platform, subtotalPaise) => unwrap(http.get('/api/meta/fees', { params: { platform, subtotalPaise } })),
   register: (body) => unwrap(http.post('/api/auth/register', body)),
   login: (body) => unwrap(http.post('/api/auth/login', body)),
   me: () => unwrap(http.get('/api/users/me')),
