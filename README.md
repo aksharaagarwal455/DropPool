@@ -1,78 +1,80 @@
 # DropPool
 
-AI-powered campus demand intelligence and smart order pooling.
+AI-powered campus demand intelligence and smart order pooling for hostel students at **Banasthali Vidyapeeth** who order quick-commerce essentials from **Blinkit, Zepto, and Instamart**.
 
-Predict demand. Match students. Optimize savings.
+> **Core Decision Engine Rule**: DropPool recommends a pool **ONLY when every single participant has positive net savings** (`savingsPaise > 0`). If even one student pays more or saves nothing, pooling is rejected (`status: 'individual'`). If fee data is incomplete, pooling is not assumed (`status: 'insufficient_data'`).
 
-This repository is the hackathon MVP. Student registration and login are implemented. Shopping intents, matching, cost optimization, payments, and demand insights are not implemented yet.
+---
 
-## Stack
+## Architecture & Technology Stack
 
-- React, Vite, Tailwind CSS, React Router, Axios
-- Node.js, Express, Mongoose
-- MongoDB Atlas
-- Jest and Supertest
+- **Client Workspace (`droppool-client`)**: React 19, Vite 8, React Router 7, Tailwind CSS 4, Axios, `qrcode`.
+- **Server Workspace (`droppool-server`)**: Node.js, Express 4 (CommonJS), Mongoose, JWT, Jest, Supertest.
+- **Design System**: Pitch deck brand identity featuring Deep Forest Green (`#0F3D1E`), Lime Green accents (`#84CC16`/`#A3E635` and `.highlight-lime`), and Soft Mint cards on clean off-white (`#F8FAF6`).
+- **Precision Currency**: Integer paise end-to-end (`100 paise = 1 INR`) to prevent floating-point calculation errors.
+- **Peer-to-Peer UPI Settlement**: Direct peer transfers via dynamic QR generation and deep links (`upi://pay`), verified manually by the host.
 
-The API uses a single 12-hour JWT. There is no refresh-token flow. Gemini, when added, is called only from the server.
+---
 
-## Prerequisites
+## Key Features
 
-- Node.js 20 or newer
-- A MongoDB Atlas cluster (free tier is enough)
+1. **Campus Authentication & Profile**: College email domain validation (`banasthali.in`), hostel and room configuration, encrypted/masked UPI ID storage, and real peer trust metrics.
+2. **Intent Creation & AI Cart Extraction**: Create shopping intents with flexible delivery windows; optional AI screenshot cart extraction via Gemini with fallback to manual input.
+3. **Solo Fee Estimation**: Live debounced solo fee estimation via `/api/meta/fees`.
+4. **Demand Matching Engine**: Pairwise compatibility scoring (platform, hostel, product similarity, overlapping delivery window).
+5. **Cost Optimizer**: Dynamic proportional vs. equal split computation, verifying net savings for all participants before allowing pool formation.
+6. **Pool Lifecycle Management**: 7-stage state machine tracking `proposed` $\rightarrow$ `confirmed` $\rightarrow$ `awaiting_payments` $\rightarrow$ `payments_confirmed` $\rightarrow$ `order_placed` $\rightarrow$ `ready_for_pickup` $\rightarrow$ `completed` (or `cancelled`).
+7. **Host Operations & Peer Settlement**: Host checkout total recording, peer UPI QR code and UTR transaction claim, host verification/rejection, and hostel pickup dispatch.
+8. **Live Campus Demand Intelligence**: Real-time order volume, peak hours, and heuristic pooling opportunities across hostels.
 
-The API starts without `MONGO_URI`. Health then reports the database as `unconfigured`. Data features in later milestones need Atlas.
+---
 
-## Setup
+## Quick Start
 
+### 1. Installation
 ```bash
-cd C:\dev\DropPool
-copy .env.example .env
 npm install
 ```
 
-Edit `.env` before you need a database or a production build:
+### 2. Environment Configuration
+Copy `.env.example` to `.env`:
+```bash
+copy .env.example .env
+```
+Ensure configuration keys are present:
+- `COLLEGE_EMAIL_DOMAINS=banasthali.in,demo.droppool.test`
+- `HOSTELS=Gargi Hostel,Maitreyi Hostel,Shri Shanta Nilaya,Kasturba Hostel,Vaidehi Hostel`
+- `DEMO_MODE=true`
 
-- `MONGO_URI` — Atlas connection string. Use the placeholders in `.env.example` as the shape. Do not commit the real value.
-- `MONGO_DB_NAME` — database name. This overrides the name in the URI when it is set.
-- `JWT_SECRET` — at least 24 characters in production. If it is missing in development, the server logs that it is using a development-only secret.
-- `COLLEGE_EMAIL_DOMAINS` — comma-separated email domains allowed for registration. Values are trimmed and lowercased. `student@college.edu` matches `college.edu`. `student@cs.college.edu` does not.
-- `GEMINI_API_KEY` — leave empty until cart extraction exists. Never put this key in a `VITE_` variable.
-- `VITE_API_URL` — leave empty for local dev. The Vite dev server proxies `/api` to `http://localhost:4000`. Set the public API origin before `npm run build` if the client is hosted separately.
+### 3. Seed Demo Data & Start Services
+```bash
+# Seed quick personas (Aarav, Diya, Kabir, Meera, Rohan, Ishita)
+npm run seed:demo -w droppool-server
 
-In Atlas, allow your IP and create a database user. The app does not create the cluster for you.
+# Start server (port 5000) and client (port 5173) concurrently
+npm run dev
+```
 
-## Scripts
+---
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | API on port 4000 and client on port 5173 |
-| `npm run dev:server` | API only |
-| `npm run dev:client` | Client only |
-| `npm test` | Server unit and API tests |
-| `npm run build` | Production client build |
-| `npm start` | API without the file watcher |
+## Testing & Build
 
-## Health
+```bash
+# Production client build
+npm run build -w droppool-client
 
-- `GET /api/health` — process is up. Includes database status. Does not require Atlas.
-- `GET /api/health/ready` — `200` only when MongoDB is connected. Otherwise `503`.
+# Server unit & integration test suite
+npm test -w droppool-server
+```
 
-Auth scaffolding, not registration:
+---
 
-- `GET /api/auth/session` — requires `Authorization: Bearer <jwt>`
-- `GET /api/auth/admin/ping` — requires an admin token
+## Detailed Demonstration Script
 
-## Documentation
+For a step-by-step walkthrough of both the positive net savings scenario and the decision engine rejection scenario, see [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — process boundaries and the decisions already locked in
-- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) — routes that exist in this build
-- [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) — the User collection, and the collections that are not created yet
-- [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) — what this foundation includes and what the next phase must not start early
+---
 
-## Current limits
+## Disclaimer
 
-- Students register and log in with `POST /api/auth/register`, `POST /api/auth/login`, and `GET /api/auth/me`. Registration always creates a `student`. An admin token is only for the existing admin ping route.
-- No email is sent. SMTP is not configured, and the app must not claim otherwise.
-- No shopping intents, matching, fee engine, pools, payments, orders, or demo seed.
-- Seeded fee profiles and demo students arrive in a later milestone. Demo records will use `isDemo: true`.
-- Express 4 is intentional. Express 5 is ESM-only, and this API stays on CommonJS so Jest can run it directly.
+All quick-commerce fee calculations and platform charges displayed in the app are **illustrative estimates** based on sample platform tier profiles and are never claimed as verified real-time platform pricing quotes.
