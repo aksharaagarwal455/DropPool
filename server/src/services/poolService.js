@@ -264,11 +264,27 @@ async function hostTransition(userId, poolId, to, body = {}) {
 
 async function listMine(userId) {
   const pools = await Pool.find({ 'members.userId': userId }).sort({ createdAt: -1 }).limit(50)
-  return pools.map((p) => ({
-    id: String(p._id), code: p.code, platform: p.platform, status: p.status, isHost: String(p.hostUserId) === String(userId),
-    memberCount: p.members.length, mySharePaise: p.members.find((m) => String(m.userId) === String(userId))?.finalSharePaise ?? p.members.find((m) => String(m.userId) === String(userId))?.estimatedSharePaise ?? null,
-    createdAt: p.createdAt, isDemo: p.isDemo,
-  }))
+  return pools.map((p) => {
+    const member = p.members.find((m) => String(m.userId) === String(userId))
+    const row = p.optimization?.members?.find((r) => String(r.id) === String(userId))
+    const individualTotalPaise = row?.individualTotalPaise ?? null
+    const mySharePaise = member?.finalSharePaise ?? member?.estimatedSharePaise ?? row?.sharePaise ?? null
+    const savingsPaise = individualTotalPaise !== null && mySharePaise !== null ? individualTotalPaise - mySharePaise : null
+
+    return {
+      id: String(p._id),
+      code: p.code,
+      platform: p.platform,
+      status: p.status,
+      isHost: String(p.hostUserId) === String(userId),
+      memberCount: p.members.length,
+      mySharePaise,
+      individualTotalPaise,
+      savingsPaise,
+      createdAt: p.createdAt,
+      isDemo: p.isDemo,
+    }
+  })
 }
 
 async function getPool(userId, poolId) {

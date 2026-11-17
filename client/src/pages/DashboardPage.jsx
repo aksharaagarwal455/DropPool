@@ -1,217 +1,440 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
-import { usePool } from '../context/PoolContext'
+import { Api, errorMessage } from '../lib/api'
+import { formatPaise } from '../lib/money'
 import heroDiagram from '../assets/hero_diagram.png'
-import avatarAanya from '../assets/avatar_aanya.png'
-import avatarKabir from '../assets/avatar_kabir.png'
-import avatarMeera from '../assets/avatar_meera.png'
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { isBackendConnected } = usePool()
+  const navigate = useNavigate()
+
+  const [activeIntents, setActiveIntents] = useState([])
+  const [activePools, setActivePools] = useState([])
+  const [demandBoard, setDemandBoard] = useState(null)
+  const [demandSummary, setDemandSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [cancellingIntentId, setCancellingIntentId] = useState(null)
+
+  const isMountedRef = useRef(true)
+
+  const loadDashboardData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [intentsRes, poolsRes, boardRes, demandRes] = await Promise.allSettled([
+        Api.intents.mine(),
+        Api.pools.mine(),
+        Api.intents.board(),
+        Api.demand(),
+      ])
+
+      if (!isMountedRef.current) return
+
+      if (intentsRes.status === 'fulfilled') {
+        const list = Array.isArray(intentsRes.value) ? intentsRes.value : intentsRes.value?.intents || []
+        // Active intents that are active, matched, or reserved
+        setActiveIntents(list.filter((i) => ['active', 'matched', 'reserved'].includes(i.status)))
+      }
+
+      if (poolsRes.status === 'fulfilled') {
+        const pList = Array.isArray(poolsRes.value) ? poolsRes.value : poolsRes.value?.pools || []
+        // Pools in progress
+        setActivePools(
+          pList.filter((p) =>
+            ['proposed', 'confirmed', 'awaiting_payments', 'payments_confirmed', 'order_placed', 'ready_for_pickup'].includes(p.status)
+          )
+        )
+      }
+
+      if (boardRes.status === 'fulfilled') {
+        setDemandBoard(boardRes.value)
+      }
+
+      if (demandRes.status === 'fulfilled') {
+        setDemandSummary(demandRes.value)
+      }
+    } catch (err) {
+      if (isMountedRef.current) setError(errorMessage(err))
+    } finally {
+      if (isMountedRef.current) setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    loadDashboardData()
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [loadDashboardData])
+
+  async function handleCancelIntent(intentId) {
+    if (!window.confirm('Cancel this shopping intent?')) return
+    setCancellingIntentId(intentId)
+    try {
+      await Api.intents.cancel(intentId)
+      await loadDashboardData()
+    } catch (err) {
+      alert(errorMessage(err))
+    } finally {
+      setCancellingIntentId(null)
+    }
+  }
+
+  function getStatusPill(status) {
+    switch (status) {
+      case 'active':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">Looking for Peers</span>
+      case 'matched':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-300">Matches Found</span>
+      case 'reserved':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">Reserved in Pool</span>
+      case 'pooled':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Pooled</span>
+      default:
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{status}</span>
+    }
+  }
+
+  function getPoolStatusBadge(status) {
+    switch (status) {
+      case 'proposed':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">Forming</span>
+      case 'confirmed':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">All Confirmed</span>
+      case 'awaiting_payments':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800">Awaiting Payments</span>
+      case 'payments_confirmed':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">Paid</span>
+      case 'order_placed':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-800">In Transit</span>
+      case 'ready_for_pickup':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-800 text-white">Ready for Pickup</span>
+      default:
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">{status}</span>
+    }
+  }
+
+  // Hostel specific active intent count from board
+  const myHostelStats = demandBoard?.breakdown?.find(
+    (b) => b.hostel?.toLowerCase() === user?.hostel?.toLowerCase()
+  )
 
   return (
     <Layout>
-      {/* Eyebrow */}
-      <div className="mb-3">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-[#4F46E5]">
-          A little coordination. A better cart.
-        </p>
-      </div>
-
-      {/* Hero Banner */}
-      <div className="bg-[#EEF2FF] rounded-3xl p-6 sm:p-10 border border-[#E0E7FF] relative overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 z-10">
-            <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold bg-white text-[#4F46E5] shadow-xs mb-4">
-              Made for your hostel, not the whole internet.
-            </span>
-
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-[#0F172A] tracking-tight leading-[1.15]">
-              Your campus. <br />
-              One smarter way to shop.
-            </h1>
-
-            <p className="mt-3 text-base sm:text-lg font-medium text-[#334155]">
-              Many carts. One smarter pool.
-            </p>
-            <p className="mt-1 text-sm text-[#64748B]">
-              Pool only when every member pays less. No exceptions.
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              <Link
-                to="/intent"
-                className="inline-flex items-center px-6 py-3 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <span className="mr-2 text-lg leading-none">+</span>
-                Create Shopping Intent
-              </Link>
-
-              <Link
-                to="/optimizer"
-                className="inline-flex items-center text-sm font-semibold text-[#4F46E5] hover:text-[#4338CA] transition-colors py-2"
-              >
-                <span>See how savings work</span>
-                <span className="ml-1 text-base">↗</span>
-              </Link>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 flex flex-col items-center justify-center">
-            <div className="w-full max-w-sm bg-white/70 backdrop-blur-xs rounded-2xl p-4 border border-white/80 shadow-xs">
-              <img
-                src={heroDiagram}
-                alt="3 individual carts converging into 1 shared pool"
-                className="w-full h-auto object-contain"
-              />
-              <div className="flex justify-between items-center text-[11px] font-medium text-[#64748B] mt-2 px-1">
-                <span>3 individual carts</span>
-                <span className="font-semibold text-[#4F46E5]">1 shared pool</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6">
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-[#F1E8E2] shadow-xs">
-          <p className="text-xs font-semibold text-[#64748B]">Your demo savings</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-[#10B981]">₹120</span>
-          </div>
-          <p className="mt-1 text-xs text-[#64748B]">Across 6 example pools</p>
+      <div className="space-y-8 max-w-6xl mx-auto">
+        {/* Eyebrow */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary-800">
+            A little coordination. A better cart.
+          </p>
+          <span className="text-xs font-medium text-gray-500">
+            Banasthali Vidyapeeth · {user?.hostel || 'Hostel'}
+          </span>
         </div>
 
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-[#F1E8E2] shadow-xs">
-          <p className="text-xs font-semibold text-[#64748B]">Active pool</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">01</span>
-          </div>
-          <p className="mt-1 text-xs text-[#64748B]">Ready for your review</p>
-        </div>
-
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-[#F1E8E2] shadow-xs">
-          <p className="text-xs font-semibold text-[#64748B]">Compatible students</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">02</span>
-          </div>
-          <p className="mt-1 text-xs text-[#64748B]">Same hostel. Same window.</p>
-        </div>
-      </div>
-
-      {/* Main Grid: Active Pools & Campus Corner Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
-        {/* Left Column: Your active pools */}
-        <div className="lg:col-span-8 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Your active pools</h2>
-                <p className="text-xs sm:text-sm text-[#64748B]">Small groups. Shared delivery. Everyone saves.</p>
-              </div>
-              <Link to="/pools" className="text-xs sm:text-sm font-semibold text-[#4F46E5] hover:underline flex items-center gap-1">
-                View all <span>→</span>
-              </Link>
-            </div>
-
-            {/* Pool Card */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#F1E8E2] shadow-xs hover:shadow-md transition-shadow">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-[#334155]">
-                    Blinkit
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">
-                    Ready to review
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">
-                    The 7 pm essentials run
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#64748B] mt-1">
-                    Hostel 8 · Today, 7:00–7:30 pm · 6 items
-                  </p>
-
-                  <div className="mt-5 flex items-center gap-3">
-                    <div className="flex -space-x-2 overflow-hidden">
-                      <img src={avatarAanya} alt="Aanya" className="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" />
-                      <img src={avatarKabir} alt="Kabir" className="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" />
-                      <img src={avatarMeera} alt="Meera" className="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" />
-                    </div>
-                    <span className="text-xs font-medium text-[#475569]">
-                      You, Kabir + Meera
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-4 sm:pt-0 border-gray-100">
-                  <div className="sm:text-right">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-[#10B981]">₹60</span>
-                    <p className="text-[11px] text-[#64748B]">total demo savings</p>
-                  </div>
-                  <Link
-                    to="/pools"
-                    className="mt-3 inline-flex items-center px-5 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold transition-colors shadow-xs"
-                  >
-                    Review savings <span className="ml-1">→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: In your corner of campus */}
-        <div className="lg:col-span-4">
-          <div className="bg-[#13132B] text-white rounded-3xl p-6 sm:p-7 shadow-xs h-full flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">In your corner of campus</h3>
-              </div>
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/10 text-white/80 mt-2 mb-4">
-                Demo activity
+        {/* Hero Banner */}
+        <div className="bg-primary-50 rounded-3xl p-6 sm:p-10 border border-primary-200 relative overflow-hidden shadow-2xs">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7 z-10 space-y-4">
+              <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold bg-white text-primary-900 shadow-2xs">
+                Made for your hostel, not the whole internet.
               </span>
 
-              <div className="space-y-4">
-                {/* Activity 1 */}
-                <div className="flex items-start gap-3">
-                  <img src={avatarKabir} alt="Kabir" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-semibold text-white">Kabir joined your pool</p>
-                    <p className="text-[11px] text-white/60">6 min ago · Hostel 8</p>
-                  </div>
-                </div>
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-[#0F172A] tracking-tight leading-[1.15]">
+                Your campus. <br />
+                <span className="highlight-lime">One smarter way</span> to shop.
+              </h1>
 
-                {/* Activity 2 */}
-                <div className="flex items-start gap-3">
-                  <img src={avatarAanya} alt="Aanya" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-semibold text-white">A better match found</p>
-                    <p className="text-[11px] text-white/60">12 min ago · Saves everyone ₹20</p>
-                  </div>
-                </div>
+              <p className="text-sm sm:text-base font-medium text-gray-700">
+                Split delivery fees and waive minimum-cart surcharges on Blinkit, Zepto, and Instamart.
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                DropPool pools carts only when <strong>every single member saves money</strong>.
+              </p>
 
-                {/* Activity 3 */}
-                <div className="flex items-start gap-3">
-                  <img src={avatarMeera} alt="Meera" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-semibold text-white">Your intent is ready</p>
-                    <p className="text-[11px] text-white/60">18 min ago · 3 matching products</p>
-                  </div>
-                </div>
+              <div className="pt-2 flex flex-wrap items-center gap-4">
+                <Link
+                  to="/intent"
+                  className="inline-flex items-center px-6 py-3.5 rounded-2xl bg-primary-800 hover:bg-primary-900 text-white text-sm font-bold shadow-xs transition-all hover:-translate-y-0.5"
+                >
+                  <span className="mr-2 text-lg leading-none">+</span>
+                  Create Shopping Intent
+                </Link>
+
+                <Link
+                  to="/optimizer"
+                  className="inline-flex items-center text-xs font-bold text-primary-900 hover:text-primary-950 transition-colors py-2 px-3 rounded-xl bg-white/80 border border-primary-200"
+                >
+                  <span>See How Cost Split Works</span>
+                  <span className="ml-1 text-sm">↗</span>
+                </Link>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
-              <span>{isBackendConnected ? 'Backend API connected' : 'Interactive Demo Mode'}</span>
-              <Link to="/matches" className="text-indigo-300 hover:text-white font-medium">See matches →</Link>
+            <div className="lg:col-span-5 flex flex-col items-center justify-center">
+              <div className="w-full max-w-sm bg-white/90 backdrop-blur-xs rounded-2xl p-5 border border-primary-100 shadow-2xs">
+                <img
+                  src={heroDiagram}
+                  alt="Individual carts converging into shared pool"
+                  className="w-full h-auto object-contain"
+                />
+                <div className="flex justify-between items-center text-xs font-semibold text-gray-600 mt-3 px-1 border-t border-gray-100 pt-2">
+                  <span>Small carts</span>
+                  <span className="text-primary-800 font-bold">1 Zero-Fee Shared Pool</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Campus Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-2xs">
+            <p className="text-xs font-semibold text-gray-500">Campus Activity (30 Days)</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-primary-900">
+                {demandSummary?.totals?.intentsLast30Days ?? 0}
+              </span>
+              <span className="text-xs text-gray-400">total intents</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              {demandSummary?.totals?.activeIntents ?? 0} actively waiting right now
+            </p>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-2xs">
+            <p className="text-xs font-semibold text-gray-500">Your Active Pools</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-[#0F172A]">
+                {activePools.length < 10 ? `0${activePools.length}` : activePools.length}
+              </span>
+              <span className="text-xs text-gray-400">in progress</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              {activePools.length > 0 ? 'Delivery underway' : 'No active runs'}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-2xs">
+            <p className="text-xs font-semibold text-gray-500">Peers in {user?.hostel || 'Hostel'}</p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-primary-800">
+                {myHostelStats?.total ?? demandBoard?.totalActiveIntents ?? 0}
+              </span>
+              <span className="text-xs text-gray-400">active demand</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Same hostel order grouping
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Active Pools Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">Your Active Pools</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Orders currently forming, awaiting payment, or in delivery.</p>
+            </div>
+            <Link to="/pools" className="text-xs font-bold text-primary-800 hover:underline">
+              View all pools →
+            </Link>
+          </div>
+
+          {activePools.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 text-center border border-gray-200 shadow-2xs space-y-2">
+              <p className="text-sm font-semibold text-gray-700">No active pools right now</p>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Once you match with hostel mates and confirm a group, your active pool progress will appear here.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/intent"
+                  className="inline-flex items-center px-4 py-2 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-semibold text-xs"
+                >
+                  Start a Cart Intent
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activePools.map((p) => (
+                <div
+                  key={p.id}
+                  className="bg-white rounded-3xl p-6 border border-gray-200 shadow-2xs flex flex-col justify-between space-y-4"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-base text-gray-900">{p.code}</span>
+                        {p.isHost && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-800 text-white">
+                            You Host
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 capitalize mt-0.5">
+                        {p.platform} · {p.memberCount} members
+                      </p>
+                    </div>
+                    {getPoolStatusBadge(p.status)}
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] text-gray-400 font-medium">Your Share</p>
+                      <p className="text-base font-extrabold text-primary-900">
+                        {p.mySharePaise ? formatPaise(p.mySharePaise) : 'Calculating'}
+                      </p>
+                    </div>
+                    <Link
+                      to={`/pools/${p.id}`}
+                      className="px-4 py-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-900 font-bold text-xs transition-colors"
+                    >
+                      Open Run Details →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Active Shopping Intents Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F172A]">Your Active Intents</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Carts you want to order and match with hostel peers.</p>
+            </div>
+            <Link to="/intent" className="text-xs font-bold text-primary-800 hover:underline">
+              + New intent
+            </Link>
+          </div>
+
+          {activeIntents.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 text-center border border-gray-200 shadow-2xs space-y-2">
+              <p className="text-sm font-semibold text-gray-700">No active shopping intents</p>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Need essentials from Blinkit, Zepto, or Instamart? Create an intent to find peers in your hostel.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/intent"
+                  className="inline-flex items-center px-5 py-2.5 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-semibold text-xs"
+                >
+                  + Create Shopping Intent
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeIntents.map((intent) => (
+                <div
+                  key={intent.id}
+                  className="bg-white rounded-3xl p-6 border border-gray-200 shadow-2xs flex flex-col justify-between space-y-4"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize font-bold text-sm text-gray-900">{intent.platform}</span>
+                        <span className="text-xs text-gray-400">· {intent.items?.length || 0} items</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Subtotal: <strong className="text-gray-900">{formatPaise(intent.subtotalPaise)}</strong>
+                      </p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Window: {new Date(intent.windowStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(intent.windowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    {getStatusPill(intent.status)}
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleCancelIntent(intent.id)}
+                      disabled={cancellingIntentId === intent.id}
+                      className="text-xs text-red-600 hover:text-red-800 font-semibold disabled:opacity-50"
+                    >
+                      {cancellingIntentId === intent.id ? 'Cancelling...' : 'Cancel'}
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/matches', { state: { intentId: intent.id } })}
+                      className="px-4 py-2 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-bold text-xs transition-colors"
+                    >
+                      Find Matches →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Campus Demand Intelligence & Hostel Board Card */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-2xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-900">
+                Campus Demand Intelligence
+              </span>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-1">
+                Banasthali Vidyapeeth Demand Signals
+              </h2>
+            </div>
+            <p className="text-[11px] text-gray-400 italic">
+              Live observations from your campus, not predictions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Peak Hour */}
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+              <p className="text-xs font-semibold text-gray-500">Peak Campus Order Window</p>
+              <p className="text-xl font-extrabold text-gray-900">
+                {demandSummary?.peak?.label || '7:00 – 8:00 PM'}
+              </p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                {demandSummary?.peak?.message || 'Hostel students place bulk evening grocery runs.'}
+              </p>
+            </div>
+
+            {/* Top Products */}
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+              <p className="text-xs font-semibold text-gray-500">Top Pooled Items</p>
+              {demandSummary?.topProducts && demandSummary.topProducts.length > 0 ? (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {demandSummary.topProducts.slice(0, 4).map((p, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-medium text-gray-700">
+                      {p.name} ({p.intents})
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">Milk, bread, snacks & oats</p>
+              )}
+            </div>
+
+            {/* Pooling Opportunity */}
+            <div className="p-4 rounded-2xl bg-primary-50/60 border border-primary-200 space-y-1">
+              <p className="text-xs font-semibold text-primary-900">Live Pooling Opportunities</p>
+              <p className="text-xl font-extrabold text-primary-950">
+                {demandSummary?.opportunities?.length || 0} potential groups
+              </p>
+              <p className="text-[11px] text-gray-600 leading-relaxed">
+                {demandSummary?.opportunities?.[0]?.message || 'Compatible intents in the same hostel can pool right now.'}
+              </p>
             </div>
           </div>
         </div>

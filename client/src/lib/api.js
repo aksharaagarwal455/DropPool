@@ -69,6 +69,7 @@ export const Api = {
     status: (id, body) => unwrap(http.post(`/api/pools/${id}/status`, body)),
   },
   payments: {
+    mine: () => unwrap(http.get('/api/payments/mine')),
     claim: (id, utr) => unwrap(http.post(`/api/payments/${id}/claim`, { utr })),
     confirm: (id) => unwrap(http.post(`/api/payments/${id}/confirm`)),
     reject: (id, reason) => unwrap(http.post(`/api/payments/${id}/reject`, { reason })),

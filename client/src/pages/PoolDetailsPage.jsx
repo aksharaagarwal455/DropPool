@@ -65,7 +65,8 @@ export default function PoolDetailsPage() {
     setListError('')
     try {
       const data = await Api.pools.mine()
-      if (isMountedRef.current) setPoolsList(data || [])
+      const pools = Array.isArray(data) ? data : data?.pools || []
+      if (isMountedRef.current) setPoolsList(pools)
     } catch (err) {
       if (isMountedRef.current) setListError(errorMessage(err))
     } finally {
