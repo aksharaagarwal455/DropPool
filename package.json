@@ -1,0 +1,24 @@
+{
+  "name": "droppool",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Campus demand intelligence and smart order pooling",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w droppool-server\" \"npm run dev -w droppool-client\"",
+    "dev:server": "npm run dev -w droppool-server",
+    "dev:client": "npm run dev -w droppool-client",
+    "build": "npm run build -w droppool-client",
+    "start": "npm run start -w droppool-server",
+    "test": "npm test -w droppool-server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
