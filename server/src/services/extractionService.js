@@ -121,29 +121,47 @@ function normalizeExtraction(raw) {
 async function extractCart(input, { fetchImpl = globalThis.fetch, apiKey = env.geminiApiKey, model = env.geminiModel } = {}) {
   const data = validateImage(input || {})
   if (!apiKey) throw new AppError('AI extraction is not configured. Enter the cart manually.', 503, { fallback: 'manual' })
-  let response
-  try {
-    response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: input.mimeType, data } }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0 },
-      }),
-      signal: AbortSignal.timeout(20000),
-    })
-  } catch {
-    throw new AppError('The AI service is unavailable right now. Enter the cart manually.', 503, { fallback: 'manual' })
+
+  const candidateModels = [model, 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'].filter((m, idx, arr) => m && arr.indexOf(m) === idx)
+
+  let lastAppError = null
+  for (const currentModel of candidateModels) {
+    let response
+    try {
+      response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: input.mimeType, data } }] }],
+          generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0 },
+        }),
+        signal: AbortSignal.timeout(20000),
+      })
+    } catch {
+      lastAppError = new AppError('The AI service is unavailable right now. Enter the cart manually.', 503, { fallback: 'manual' })
+      continue
+    }
+
+    if (!response.ok) {
+      const errText = typeof response.text === 'function' ? await response.text().catch(() => '') : ''
+      if (errText) {
+        console.error(`Gemini API error on model ${currentModel}: ${response.status} ${errText}`)
+      }
+      lastAppError = new AppError('The AI service could not read this image. Enter the cart manually.', 503, { fallback: 'manual' })
+      continue
+    }
+
+    let raw
+    try {
+      const body = await response.json()
+      raw = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
+    } catch {
+      throw new AppError('The AI response could not be understood. Enter the cart manually.', 502, { fallback: 'manual' })
+    }
+    return normalizeExtraction(raw)
   }
-  if (!response.ok) throw new AppError('The AI service could not read this image. Enter the cart manually.', 503, { fallback: 'manual' })
-  let raw
-  try {
-    const body = await response.json()
-    raw = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
-  } catch {
-    throw new AppError('The AI response could not be understood. Enter the cart manually.', 502, { fallback: 'manual' })
-  }
-  return normalizeExtraction(raw)
+
+  throw lastAppError || new AppError('The AI service could not read this image. Enter the cart manually.', 503, { fallback: 'manual' })
 }
 
 module.exports = { extractCart, normalizeExtraction, validateImage, MAX_BYTES }

@@ -36,7 +36,7 @@ function resolveEnv(source = process.env) {
     collegeEmailDomains: parseCollegeEmailDomains(source.COLLEGE_EMAIL_DOMAINS),
     demoMode: source.DEMO_MODE === 'true',
     geminiApiKey: source.GEMINI_API_KEY || '',
-    geminiModel: source.GEMINI_MODEL || 'gemini-2.5-flash',
+    geminiModel: source.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     hostels: String(source.HOSTELS || '').split(',').map((h) => h.trim()).filter(Boolean),
     tzOffsetMinutes: Number.isFinite(Number(source.TZ_OFFSET_MINUTES)) && source.TZ_OFFSET_MINUTES !== undefined && source.TZ_OFFSET_MINUTES !== '' ? Number(source.TZ_OFFSET_MINUTES) : 330,
     maxGroupSize: Number.isInteger(Number(source.MAX_GROUP_SIZE)) && Number(source.MAX_GROUP_SIZE) >= 2 ? Number(source.MAX_GROUP_SIZE) : 4,

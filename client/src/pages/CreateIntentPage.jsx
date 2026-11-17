@@ -583,11 +583,10 @@ export default function CreateIntentPage() {
                           placeholder="0.00"
                           value={item.unitPrice}
                           onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
-                          className={`w-20 text-right font-bold rounded-lg py-1 px-2 border focus:outline-none ${
-                            item.needsReview
+                          className={`w-20 text-right font-bold rounded-lg py-1 px-2 border focus:outline-none ${item.needsReview
                               ? 'border-amber-400 bg-amber-50'
                               : 'border-[#E2EBDD] bg-[#F8FAF6] focus:border-[#84CC16]'
-                          }`}
+                            }`}
                         />
                       </div>
                     </div>
@@ -629,8 +628,8 @@ export default function CreateIntentPage() {
                   {observedFeesPaise !== null
                     ? '• Observed from screenshot charges'
                     : loadingFees
-                    ? 'Calculating fees…'
-                    : '• Calculated via platform illustrative fee rules'}
+                      ? 'Calculating fees…'
+                      : '• Calculated via platform illustrative fee rules'}
                 </p>
               </div>
 
