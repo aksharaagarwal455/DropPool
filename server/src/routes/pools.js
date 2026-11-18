@@ -16,7 +16,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }))
 
 router.get('/:id', asyncHandler(async (req, res) => send(res, await svc.getPool(req.auth.userId, req.params.id))))
-router.post('/:id/confirm', asyncHandler(async (req, res) => send(res, await svc.confirmMembership(req.auth.userId, req.params.id))))
+router.post('/:id/confirm', asyncHandler(async (req, res) => send(res, await svc.confirmMembership(req.auth.userId, req.params.id, req.body?.targetUserId))))
 router.post('/:id/confirm-all', asyncHandler(async (req, res) => send(res, await svc.confirmAllMembers(req.auth.userId, req.params.id))))
 router.post('/:id/confirm-payments', asyncHandler(async (req, res) => send(res, await svc.confirmAllPayments(req.auth.userId, req.params.id))))
 router.post('/:id/leave', asyncHandler(async (req, res) => send(res, await svc.leavePool(req.auth.userId, req.params.id))))

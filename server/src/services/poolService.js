@@ -157,12 +157,15 @@ async function loadForHost(userId, poolId) {
   return pool
 }
 
-async function confirmMembership(userId, poolId) {
+async function confirmMembership(userId, poolId, targetUserId = null) {
   const pool = await loadForMember(userId, poolId)
   if (pool.status !== 'proposed') throw new AppError('This pool is no longer waiting for confirmations', 409)
-  const member = pool.members.find((m) => String(m.userId) === String(userId))
-  if (member.confirmed) throw new AppError('You already confirmed', 409)
+  const confirmId = (targetUserId && pool.isDemo) ? String(targetUserId) : String(userId)
+  const member = pool.members.find((m) => String(m.userId) === confirmId)
+  if (!member) throw new AppError('Member not found in pool', 404)
+  if (member.confirmed) return viewPool(pool, userId)
   member.confirmed = true
+  pushHistory(pool, 'confirmed', member.userId, `${member.name} confirmed participation`)
   if (pool.members.every((m) => m.confirmed)) {
     pool.status = 'confirmed'
     pushHistory(pool, 'confirmed', userId, 'All members confirmed')

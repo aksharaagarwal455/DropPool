@@ -117,10 +117,10 @@ export default function PoolDetailsPage() {
       fetchPool()
       refreshUser?.()
 
-      // Polling every 10 seconds
+      // Real-time polling every 2.5 seconds for instant updates
       const interval = setInterval(() => {
         fetchPool(true)
-      }, 10000)
+      }, 2500)
 
       // Window focus handler
       const handleFocus = () => {
@@ -140,12 +140,19 @@ export default function PoolDetailsPage() {
     }
   }, [id, fetchPoolsList, fetchPool])
 
-  // Member Action: Confirm membership
-  async function handleConfirmMembership() {
+  // Immediately re-fetch pool when persona switched in top bar
+  useEffect(() => {
+    if (id && user?.id) {
+      fetchPool(true)
+    }
+  }, [id, user?.id, fetchPool])
+
+  // Member Action: Confirm membership (for self or specific member)
+  async function handleConfirmMembership(targetUserId = null) {
     setActionLoading(true)
     setActionError('')
     try {
-      const updated = await Api.pools.confirm(pool.id)
+      const updated = await Api.pools.confirm(pool.id, targetUserId)
       setPool(updated?.pool || updated)
     } catch (err) {
       setActionError(errorMessage(err))
@@ -628,11 +635,11 @@ export default function PoolDetailsPage() {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               {pool.actions?.canConfirm && (
                 <button
-                  onClick={handleConfirmMembership}
+                  onClick={() => handleConfirmMembership()}
                   disabled={actionLoading}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-semibold text-sm shadow-xs transition-colors"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-bold text-sm shadow-xs transition-transform active:scale-95 cursor-pointer"
                 >
-                  {actionLoading ? 'Confirming...' : '✓ Confirm Membership'}
+                  {actionLoading ? 'Confirming...' : `✓ Confirm My Cart (${user?.name?.split(' ')[0] || 'Me'})`}
                 </button>
               )}
               {pool.actions?.canLeave && (
@@ -696,10 +703,25 @@ export default function PoolDetailsPage() {
                           ({m.hostel} {m.block ? `· ${m.block}` : ''})
                         </span>
                       </div>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${m.confirmed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                        }`}>
-                        {m.confirmed ? '✓ Confirmed' : 'Waiting confirmation'}
-                      </span>
+                      {m.confirmed ? (
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-green-100 text-green-800 flex items-center gap-1">
+                          ✓ Confirmed
+                        </span>
+                      ) : pool.status === 'proposed' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmMembership(m.userId)}
+                          disabled={actionLoading}
+                          className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>✓</span>
+                          <span>{actionLoading ? '...' : `Confirm as ${m.name}`}</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700">
+                          Waiting confirmation
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-2 pl-3 border-l-2 border-gray-100">

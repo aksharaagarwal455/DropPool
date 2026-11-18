@@ -63,7 +63,7 @@ export const Api = {
     mine: () => unwrap(http.get('/api/pools/mine')),
     create: (intentIds) => unwrap(http.post('/api/pools', { intentIds })).then((d) => d?.pool || d),
     get: (id) => unwrap(http.get(`/api/pools/${id}`)).then((d) => d?.pool || d),
-    confirm: (id) => unwrap(http.post(`/api/pools/${id}/confirm`)).then((d) => d?.pool || d),
+    confirm: (id, targetUserId) => unwrap(http.post(`/api/pools/${id}/confirm`, { targetUserId })).then((d) => d?.pool || d),
     confirmAll: (id) => unwrap(http.post(`/api/pools/${id}/confirm-all`)).then((d) => d?.pool || d),
     confirmPayments: (id) => unwrap(http.post(`/api/pools/${id}/confirm-payments`)).then((d) => d?.pool || d),
     leave: (id) => unwrap(http.post(`/api/pools/${id}/leave`)).then((d) => d?.pool || d),
