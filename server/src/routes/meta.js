@@ -3,20 +3,28 @@ const { env } = require('../config/env')
 const { PLATFORMS } = require('../services/fees/defaultProfiles')
 const { getProfile } = require('../services/fees/feeService')
 const { computeFees } = require('../services/fees/feeRules')
+const { getCampusHostels } = require('../utils/distance')
 const { asyncHandler, AppError } = require('../middleware/errorHandler')
 
 const router = express.Router()
 
 router.get('/', (req, res) => {
+  const campusHostels = getCampusHostels()
+  const combinedHostels = [...new Set([...(env.hostels || []), ...campusHostels])].filter(Boolean)
   res.json({
     success: true,
     data: {
       platforms: PLATFORMS,
-      hostels: env.hostels,
+      hostels: combinedHostels.length > 0 ? combinedHostels : env.hostels,
+      campusHostels,
       collegeEmailDomains: env.collegeEmailDomains,
       demoMode: env.demoMode,
       geminiConfigured: Boolean(env.geminiApiKey),
       maxGroupSize: env.maxGroupSize,
+      maxProximityTier: env.maxProximityTier,
+      nearMin: env.nearMin,
+      enableCampusWide: env.enableCampusWide,
+      minMarginalSavingPaise: env.minMarginalSavingPaise,
     },
   })
 })

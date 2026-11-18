@@ -9,7 +9,8 @@
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "seed:demo": "node src/scripts/seedDemo.js",
     "reset:demo": "node src/scripts/seedDemo.js reset",
-    "make-admin": "node src/scripts/makeAdmin.js"
+    "make-admin": "node src/scripts/makeAdmin.js",
+    "check:campus": "node src/scripts/checkCampus.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -1,0 +1,12 @@
+{
+  "_comment": "FILL WITH REAL BANASTHALI COORDINATES. Do not invent real coordinates. Update lat and lng for each hostel with verified campus GPS coordinates.",
+  "hostels": [
+    { "name": "Gargi Hostel", "lat": 0.0, "lng": 0.0 },
+    { "name": "Maitreyi Hostel", "lat": 0.0, "lng": 0.0 },
+    { "name": "Shri Shanta Nilaya", "lat": 0.0, "lng": 0.0 },
+    { "name": "Kasturba Hostel", "lat": 0.0, "lng": 0.0 },
+    { "name": "Vaidehi Hostel", "lat": 0.0, "lng": 0.0 }
+  ],
+  "walkSpeedMetersPerMin": 80,
+  "detourFactor": 1.3
+}

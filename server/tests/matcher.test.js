@@ -49,9 +49,11 @@ describe('group proposal', () => {
     const others = [1, 2, 3].map(() => intent({ subtotalPaise: 8000, items: [{ name: 'Maggi', qty: 1, unitPricePaise: 8000 }] }))
     const result = proposeGroup({ seed, candidates: others, profile, now })
     expect(result.status).toBe('pool')
-    expect(result.members).toHaveLength(4)
+    // 3 students at Rs 80 each (Rs 240) reach Zepto's Rs 199 free delivery target; fewest members preferred
+    expect(result.members).toHaveLength(3)
+    expect(result.targetReached).toBe(true)
     expect(result.optimization.recommendation).toBe('pool')
-    expect(result.explanation).toContain('Matched because')
+    expect(result.explanation).toContain('crosses free delivery')
     expect(result.score.total).toBeGreaterThan(0)
   })
 

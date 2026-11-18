@@ -13,7 +13,8 @@
     "dev:client": "npm run dev -w droppool-client",
     "build": "npm run build -w droppool-client",
     "start": "npm run start -w droppool-server",
-    "test": "npm test -w droppool-server"
+    "test": "npm test -w droppool-server",
+    "check:campus": "npm run check:campus -w droppool-server"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"

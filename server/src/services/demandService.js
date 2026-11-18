@@ -58,7 +58,7 @@ async function summary(now = new Date()) {
 
   const groups = new Map()
   for (const d of active) {
-    const key = `${d.platform}|${normalizeName(d.hostel)}`
+    const key = `${d.platform}`
     groups.set(key, [...(groups.get(key) || []), toPlain(d)])
   }
   const opportunities = []
@@ -73,11 +73,13 @@ async function summary(now = new Date()) {
       if (seenSets.has(idKey)) continue
       seenSets.add(idKey)
       const mins = result.optimization.members.map((m) => m.savingsPaise)
+      const isSameHostel = result.members.every((m) => normalizeName(m.hostel) === normalizeName(seed.hostel))
+      const locLabel = isSameHostel ? seed.hostel : 'nearby hostels'
       opportunities.push({
-        kind: 'heuristic', platform: seed.platform, hostel: seed.hostel, students: result.members.length,
+        kind: 'heuristic', platform: seed.platform, hostel: locLabel, students: result.members.length,
         windowMinutes: intersectWindow(result.members).minutes,
         minSavingsPaise: Math.min(...mins), maxSavingsPaise: Math.max(...mins),
-        message: `${result.members.length} students on ${seed.platform} in ${seed.hostel} could pool within their shared window.`,
+        message: `${result.members.length} students on ${seed.platform} in ${locLabel} could pool within their shared window.`,
       })
     }
   }

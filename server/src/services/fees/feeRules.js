@@ -34,4 +34,69 @@ function computeFees(profile, subtotalPaise) {
   return { lines, totalPaise: lines.reduce((sum, line) => sum + line.amountPaise, 0) }
 }
 
-module.exports = { validateProfile, computeFees }
+function feeTargets(profile) {
+  if (!profile || typeof profile !== 'object') return null
+  const freeAbove = profile.freeDeliveryAbovePaise ?? null
+  const smallBelow = profile.smallCartBelowPaise ?? null
+  return {
+    freeDeliveryAbovePaise: freeAbove,
+    smallCartBelowPaise: smallBelow,
+    targetPaise: freeAbove,
+    deliveryFeePaise: profile.deliveryFeePaise ?? 0,
+    smallCartFeePaise: profile.smallCartFeePaise ?? 0,
+  }
+}
+
+function gapToTarget(profile, pooledSubtotalPaise = 0) {
+  const targets = feeTargets(profile)
+  if (!targets) {
+    return {
+      deliveryGapPaise: 0,
+      smallCartGapPaise: 0,
+      gapPaise: 0,
+      targetReached: false,
+      nextMilestone: null,
+    }
+  }
+
+  const freeAbove = targets.freeDeliveryAbovePaise ?? 0
+  const smallBelow = targets.smallCartBelowPaise ?? 0
+
+  const deliveryGapPaise = freeAbove > 0 ? Math.max(0, freeAbove - pooledSubtotalPaise) : 0
+  const smallCartGapPaise = smallBelow > 0 ? Math.max(0, smallBelow - pooledSubtotalPaise) : 0
+  const targetReached = freeAbove > 0 ? deliveryGapPaise === 0 : true
+
+  let nextMilestone = null
+  if (smallCartGapPaise > 0) {
+    nextMilestone = {
+      type: 'waive_small_cart_fee',
+      label: 'Waive small-cart fee',
+      gapPaise: smallCartGapPaise,
+      thresholdPaise: smallBelow,
+    }
+  } else if (deliveryGapPaise > 0) {
+    nextMilestone = {
+      type: 'free_delivery',
+      label: 'Free delivery',
+      gapPaise: deliveryGapPaise,
+      thresholdPaise: freeAbove,
+    }
+  } else {
+    nextMilestone = {
+      type: 'free_delivery_unlocked',
+      label: 'Free delivery unlocked',
+      gapPaise: 0,
+      thresholdPaise: freeAbove,
+    }
+  }
+
+  return {
+    deliveryGapPaise,
+    smallCartGapPaise,
+    gapPaise: deliveryGapPaise > 0 ? deliveryGapPaise : smallCartGapPaise,
+    targetReached,
+    nextMilestone,
+  }
+}
+
+module.exports = { validateProfile, computeFees, feeTargets, gapToTarget }

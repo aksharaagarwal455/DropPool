@@ -4,6 +4,8 @@ const { AppError } = require('../middleware/errorHandler')
 const { PLATFORMS } = require('./fees/defaultProfiles')
 const { cleanText, objectId, dateValue, firstName } = require('../utils/validate')
 const { isPaise } = require('./money')
+const { proximityTier, walkMinutes, proximityLabel } = require('../utils/distance')
+const { env } = require('../config/env')
 
 const MAX_WINDOW_MS = 24 * 60 * 60 * 1000
 
@@ -157,8 +159,34 @@ async function board(userId) {
   await expireStale()
   const me = await User.findById(userId)
   const docs = await ShoppingIntent.find({ status: 'active', userId: { $ne: userId } }).sort({ windowStart: 1 }).limit(200)
-  const mine = String(me?.hostel || '').trim().toLowerCase()
-  return docs.filter((d) => String(d.hostel).trim().toLowerCase() === mine).map((d) => toIntentView(d, { owner: false }))
+  if (!me) return []
+
+  const maxTier = env.maxProximityTier ?? 3
+  const nearMin = env.nearMin ?? 7
+  const enableCampusWide = env.enableCampusWide
+
+  const annotated = []
+  for (const d of docs) {
+    const tier = proximityTier(me, d, { maxProximityTier: maxTier, nearMin, enableCampusWide })
+    if (tier === null || tier > maxTier) continue
+    const walk = walkMinutes(me.hostel, d.hostel)
+    const label = proximityLabel(tier, walk)
+    const view = toIntentView(d, { owner: false })
+    view.proximityTier = tier
+    view.walkMinutes = Number.isFinite(walk) ? walk : null
+    view.distanceLabel = label
+    annotated.push(view)
+  }
+
+  annotated.sort((a, b) => {
+    if (a.proximityTier !== b.proximityTier) return a.proximityTier - b.proximityTier
+    const walkA = a.walkMinutes ?? 0
+    const walkB = b.walkMinutes ?? 0
+    if (walkA !== walkB) return walkA - walkB
+    return new Date(a.windowStart) - new Date(b.windowStart)
+  })
+
+  return annotated
 }
 
 function toPlain(doc) {

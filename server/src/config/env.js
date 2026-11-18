@@ -40,6 +40,10 @@ function resolveEnv(source = process.env) {
     hostels: String(source.HOSTELS || '').split(',').map((h) => h.trim()).filter(Boolean),
     tzOffsetMinutes: Number.isFinite(Number(source.TZ_OFFSET_MINUTES)) && source.TZ_OFFSET_MINUTES !== undefined && source.TZ_OFFSET_MINUTES !== '' ? Number(source.TZ_OFFSET_MINUTES) : 330,
     maxGroupSize: Number.isInteger(Number(source.MAX_GROUP_SIZE)) && Number(source.MAX_GROUP_SIZE) >= 2 ? Number(source.MAX_GROUP_SIZE) : 4,
+    maxProximityTier: Number.isInteger(Number(source.MAX_PROXIMITY_TIER)) ? Number(source.MAX_PROXIMITY_TIER) : 3,
+    nearMin: Number.isInteger(Number(source.NEAR_MIN)) && Number(source.NEAR_MIN) > 0 ? Number(source.NEAR_MIN) : 7,
+    enableCampusWide: source.ENABLE_CAMPUS_WIDE === 'true',
+    minMarginalSavingPaise: Number.isInteger(Number(source.MIN_MARGINAL_SAVING_PAISE)) && Number(source.MIN_MARGINAL_SAVING_PAISE) >= 0 ? Number(source.MIN_MARGINAL_SAVING_PAISE) : 500,
     usingDevJwtSecret: !jwtSecret && nodeEnv !== 'production',
   }
 }

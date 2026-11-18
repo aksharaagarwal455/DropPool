@@ -7,12 +7,36 @@ const { DEFAULT_CONFIG, proposeGroup } = require('./matching/matcher')
 const { optimize } = require('./optimization/optimizer')
 const { toPlain, expireStale } = require('./intentService')
 
+const { proximityTier, walkMinutes, proximityLabel } = require('../utils/distance')
+
 function matchConfig() {
-  return { ...DEFAULT_CONFIG, maxGroupSize: env.maxGroupSize }
+  return {
+    ...DEFAULT_CONFIG,
+    maxGroupSize: env.maxGroupSize,
+    maxProximityTier: env.maxProximityTier,
+    nearMin: env.nearMin,
+    enableCampusWide: env.enableCampusWide,
+    minMarginalSavingPaise: env.minMarginalSavingPaise,
+  }
 }
 
-function publicMember(plain) {
-  return { intentId: plain.id, name: plain.userName, hostel: plain.hostel, block: plain.block, floor: plain.floor, itemCount: plain.items.length, subtotalPaise: plain.subtotalPaise }
+function publicMember(plain, seed, config) {
+  const tier = seed ? proximityTier(seed, plain, config) : null
+  const walk = seed ? walkMinutes(seed.hostel, plain.hostel) : 0
+  const isSelf = seed && String(plain.id) === String(seed.id)
+  return {
+    intentId: plain.id,
+    name: plain.userName,
+    hostel: plain.hostel,
+    block: plain.block,
+    floor: plain.floor,
+    itemCount: plain.items.length,
+    subtotalPaise: plain.subtotalPaise,
+    isSelf,
+    proximityTier: isSelf ? 0 : tier,
+    walkMinutes: isSelf ? 0 : (Number.isFinite(walk) ? walk : null),
+    distanceLabel: isSelf ? 'you' : proximityLabel(tier, walk),
+  }
 }
 
 async function runMatching(userId, intentId) {
@@ -23,16 +47,22 @@ async function runMatching(userId, intentId) {
   const seed = toPlain(seedDoc)
   const docs = await ShoppingIntent.find({ status: 'active', platform: seed.platform, userId: { $ne: userId } }).limit(200)
   const profile = await getProfile(seed.platform)
-  const result = proposeGroup({ seed, candidates: docs.map(toPlain), profile, config: matchConfig() })
+  const cfg = matchConfig()
+  const result = proposeGroup({ seed, candidates: docs.map(toPlain), profile, config: cfg })
   return {
     status: result.status,
     explanation: result.explanation,
     score: result.score,
-    members: result.members.map(publicMember),
+    members: result.members.map((m) => publicMember(m, seed, cfg)),
     intentIds: result.members.map((m) => m.id),
     optimization: result.optimization,
     classified: result.classified,
     feeProfile: { version: profile?.version ?? null, isIllustrative: profile?.isIllustrative ?? true },
+    targetReached: result.targetReached ?? false,
+    gapPaise: result.gapPaise ?? null,
+    smallCartGapPaise: result.smallCartGapPaise ?? null,
+    membersNeeded: result.membersNeeded ?? null,
+    milestone: result.milestone ?? null,
   }
 }
 
