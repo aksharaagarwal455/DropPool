@@ -160,25 +160,31 @@ export default function Navbar({ meta }) {
                         onClick={() => { quickLogin('aarav'); setDropdownOpen(false) }}
                         className="px-2 py-1 text-[11px] rounded bg-white hover:bg-[#F0FDF4] border border-gray-200 text-left font-medium text-[#0F3D1E]"
                       >
-                        Aarav (Zepto)
+                        Aarav (Member)
                       </button>
                       <button
-                        onClick={() => { quickLogin('rohan'); setDropdownOpen(false) }}
+                        onClick={() => { quickLogin('diya'); setDropdownOpen(false) }}
                         className="px-2 py-1 text-[11px] rounded bg-white hover:bg-[#F0FDF4] border border-gray-200 text-left font-medium text-[#0F3D1E]"
                       >
-                        Rohan (Instamart)
+                        Diya (Member)
                       </button>
                       <button
                         onClick={() => { quickLogin('kabir'); setDropdownOpen(false) }}
                         className="px-2 py-1 text-[11px] rounded bg-white hover:bg-[#F0FDF4] border border-gray-200 text-left font-medium text-[#0F3D1E]"
                       >
-                        Kabir (Zepto)
+                        Kabir (Host)
                       </button>
                       <button
                         onClick={() => { quickLogin('sara'); setDropdownOpen(false) }}
                         className="px-2 py-1 text-[11px] rounded bg-white hover:bg-[#F0FDF4] border border-gray-200 text-left font-medium text-[#0F3D1E]"
                       >
                         Sara (Host)
+                      </button>
+                      <button
+                        onClick={() => { quickLogin('rohan'); setDropdownOpen(false) }}
+                        className="col-span-2 px-2 py-1 text-[11px] rounded bg-white hover:bg-[#F0FDF4] border border-gray-200 text-left font-medium text-[#0F3D1E]"
+                      >
+                        Rohan (Rejection Demo)
                       </button>
                     </div>
                   </div>

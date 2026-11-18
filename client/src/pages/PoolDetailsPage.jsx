@@ -516,13 +516,12 @@ export default function PoolDetailsPage() {
                     <div key={st.key} className="flex flex-col space-y-1">
                       <div className="flex items-center gap-2">
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isCompleted
+                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isCompleted
                               ? 'bg-primary-800 text-white'
                               : isCurrent
-                              ? 'bg-primary-800 text-white ring-4 ring-primary-300'
-                              : 'bg-gray-100 text-gray-400 border border-gray-200'
-                          }`}
+                                ? 'bg-primary-800 text-white ring-4 ring-primary-300'
+                                : 'bg-gray-100 text-gray-400 border border-gray-200'
+                            }`}
                         >
                           {isCompleted ? '✓' : i + 1}
                         </div>
@@ -631,9 +630,8 @@ export default function PoolDetailsPage() {
                           ({m.hostel} {m.block ? `· ${m.block}` : ''})
                         </span>
                       </div>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
-                        m.confirmed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                      }`}>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${m.confirmed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                        }`}>
                         {m.confirmed ? '✓ Confirmed' : 'Waiting confirmation'}
                       </span>
                     </div>
@@ -720,15 +718,14 @@ export default function PoolDetailsPage() {
                       {formatPaise(pool.myPayment.amountPaise)}
                     </h2>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${
-                    pool.myPayment.status === 'confirmed'
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${pool.myPayment.status === 'confirmed'
                       ? 'bg-green-100 text-green-800'
                       : pool.myPayment.status === 'claimed'
-                      ? 'bg-blue-100 text-blue-800'
-                      : pool.myPayment.status === 'rejected'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
+                        ? 'bg-blue-100 text-blue-800'
+                        : pool.myPayment.status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-amber-100 text-amber-800'
+                    }`}>
                     {pool.myPayment.status}
                   </span>
                 </div>
