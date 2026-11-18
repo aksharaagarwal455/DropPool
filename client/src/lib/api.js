@@ -55,7 +55,7 @@ export const Api = {
     cancel: (id) => unwrap(http.post(`/api/intents/${id}/cancel`)),
   },
   extract: (body) => unwrap(http.post('/api/ai/extract', body)),
-  match: (intentId) => unwrap(http.post('/api/matching/run', { intentId })),
+  match: (intentId) => unwrap(http.post('/api/matching/run', { intentId })).then((d) => d?.proposal || d),
   optimization: {
     preview: (intentIds, allocation) => unwrap(http.post('/api/optimization/preview', { intentIds, allocation })),
   },

@@ -54,7 +54,8 @@ export default function MatchingResultsPage() {
 
     try {
       const res = await Api.match(id)
-      setProposal(res)
+      const data = res?.proposal || res
+      setProposal(data)
     } catch (err) {
       setMatchingError(errorMessage(err))
       setProposal(null)
@@ -93,8 +94,9 @@ export default function MatchingResultsPage() {
 
     try {
       const res = await Api.pools.create(proposal.intentIds)
-      if (res?.pool?.id) {
-        navigate(`/pools/${res.pool.id}`)
+      const poolId = res?.pool?.id || res?.id
+      if (poolId) {
+        navigate(`/pools/${poolId}`)
       } else {
         setMatchingError('Failed to create pool: unexpected server response')
       }
