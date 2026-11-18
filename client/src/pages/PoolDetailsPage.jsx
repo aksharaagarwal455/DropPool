@@ -24,7 +24,7 @@ function getStepIndex(status) {
 export default function PoolDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
 
   // State for pool list mode (/pools)
   const [poolsList, setPoolsList] = useState([])
@@ -115,6 +115,7 @@ export default function PoolDetailsPage() {
     } else {
       setLoadingPool(true)
       fetchPool()
+      refreshUser?.()
 
       // Polling every 10 seconds
       const interval = setInterval(() => {
@@ -124,6 +125,7 @@ export default function PoolDetailsPage() {
       // Window focus handler
       const handleFocus = () => {
         fetchPool(true)
+        refreshUser?.()
       }
       window.addEventListener('focus', handleFocus)
 
@@ -531,10 +533,10 @@ export default function PoolDetailsPage() {
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isCompleted
-                              ? 'bg-primary-800 text-white'
-                              : isCurrent
-                                ? 'bg-primary-800 text-white ring-4 ring-primary-300'
-                                : 'bg-gray-100 text-gray-400 border border-gray-200'
+                            ? 'bg-primary-800 text-white'
+                            : isCurrent
+                              ? 'bg-primary-800 text-white ring-4 ring-primary-300'
+                              : 'bg-gray-100 text-gray-400 border border-gray-200'
                             }`}
                         >
                           {isCompleted ? '✓' : i + 1}
@@ -763,12 +765,12 @@ export default function PoolDetailsPage() {
                     </h2>
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${pool.myPayment.status === 'confirmed'
-                      ? 'bg-green-100 text-green-800'
-                      : pool.myPayment.status === 'claimed'
-                        ? 'bg-blue-100 text-blue-800'
-                        : pool.myPayment.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
+                    ? 'bg-green-100 text-green-800'
+                    : pool.myPayment.status === 'claimed'
+                      ? 'bg-blue-100 text-blue-800'
+                      : pool.myPayment.status === 'rejected'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-amber-100 text-amber-800'
                     }`}>
                     {pool.myPayment.status}
                   </span>
@@ -880,13 +882,20 @@ export default function PoolDetailsPage() {
                         Place the order on {pool.platform} for all member items. Once placed, enter the exact final checkout amount charged.
                       </p>
 
-                      {!user?.hasUpiId && (
+                      {!user?.hasUpiId && !pool.isDemo && (
                         <div className="p-3 rounded-xl bg-amber-400 text-amber-950 text-xs font-medium space-y-1">
                           <p className="font-bold">⚠️ UPI ID Required</p>
                           <p>Add your UPI ID in your Profile before recording total so members can pay you.</p>
                           <Link to="/profile" className="inline-block mt-1 font-bold underline">
                             Go to Profile →
                           </Link>
+                        </div>
+                      )}
+
+                      {(user?.hasUpiId || pool.isDemo) && (
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-primary-950/80 border border-primary-700 text-xs text-lime-300">
+                          <span>✓ Host UPI Active for Settlements:</span>
+                          <span className="font-mono font-bold text-white">{user?.upiIdMasked || 'kabir.demo@okaxis'}</span>
                         </div>
                       )}
 

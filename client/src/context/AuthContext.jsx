@@ -186,6 +186,7 @@ export function AuthProvider({ children }) {
         logout,
         updateProfile,
         quickLogin,
+        refreshUser: fetchCurrentUser,
       }}
     >
       {children}

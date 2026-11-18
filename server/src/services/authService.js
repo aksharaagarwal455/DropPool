@@ -5,6 +5,7 @@ const { AppError } = require('../middleware/errorHandler')
 const { isAllowedCollegeEmail, normalizeEmail } = require('../utils/emailDomain')
 const { hashPassword, verifyPassword } = require('../utils/password')
 const { signAccessToken } = require('../utils/jwt')
+const { maskUpiId } = require('../utils/upi')
 
 const INVALID_LOGIN = 'Invalid email or password'
 
@@ -39,6 +40,8 @@ function toPublicUser(user) {
       cancelledPools: doc.trust?.cancelledPools ?? 0,
     },
     isDemo: Boolean(doc.isDemo),
+    hasUpiId: Boolean(doc.upiId),
+    upiIdMasked: maskUpiId(doc.upiId),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   }
@@ -99,7 +102,7 @@ async function login(body) {
     throw new AppError('Email and password are required', 422)
   }
 
-  const user = await User.findOne({ email }).select('+passwordHash')
+  const user = await User.findOne({ email }).select('+passwordHash +upiId')
   const matches = user ? await verifyPassword(password, user.passwordHash) : false
   if (!user || !matches) {
     throw new AppError(INVALID_LOGIN, 401)
@@ -117,7 +120,7 @@ async function getCurrentUser(userId) {
   if (!mongoose.isValidObjectId(userId)) {
     throw new AppError('Invalid or expired token', 401)
   }
-  const user = await User.findById(userId)
+  const user = await User.findById(userId).select('+upiId')
   if (!user) {
     throw new AppError('Invalid or expired token', 401)
   }
