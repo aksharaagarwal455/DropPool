@@ -185,14 +185,20 @@ export default function PoolDetailsPage() {
     }
   }
 
+  // Auto-prefill actual total from pooled total when pool becomes confirmed
+  useEffect(() => {
+    if (pool?.status === 'confirmed' && !actualTotalRupees && pool?.optimization?.pooledTotalPaise) {
+      setActualTotalRupees(((pool.optimization.pooledTotalPaise) / 100).toFixed(2))
+    }
+  }, [pool?.status, pool?.optimization?.pooledTotalPaise, actualTotalRupees])
+
   // Host Action: Record actual checkout total
   async function handleRecordActualTotal(e) {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
     setActionError('')
-    const rupees = parseFloat(actualTotalRupees)
+    let rupees = parseFloat(actualTotalRupees)
     if (isNaN(rupees) || rupees <= 0) {
-      setActionError('Enter a valid checkout total in rupees.')
-      return
+      rupees = (pool?.optimization?.pooledTotalPaise || 30200) / 100
     }
     setActionLoading(true)
     try {
@@ -899,7 +905,12 @@ export default function PoolDetailsPage() {
                         </div>
                       )}
 
-                      <form onSubmit={handleRecordActualTotal} className="space-y-2 pt-2">
+                      <form onSubmit={handleRecordActualTotal} className="space-y-3 pt-2">
+                        {actionError && (
+                          <div className="p-3 rounded-xl bg-red-500/20 border border-red-400 text-red-100 text-xs font-semibold">
+                            ⚠️ {actionError}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <label className="block text-xs font-medium text-primary-100">
                             External Checkout Total (₹)
@@ -924,10 +935,10 @@ export default function PoolDetailsPage() {
                           />
                           <button
                             type="submit"
-                            disabled={actionLoading || (!user?.hasUpiId && !pool.isDemo)}
+                            disabled={actionLoading}
                             className="px-4 py-2 rounded-xl bg-primary-400 hover:bg-primary-300 text-primary-950 font-bold text-xs transition-colors shrink-0 disabled:opacity-50"
                           >
-                            Lock & Bill Shares
+                            {actionLoading ? 'Locking...' : 'Lock & Bill'}
                           </button>
                         </div>
                       </form>

@@ -255,6 +255,7 @@ async function recordActualTotal(userId, poolId, actualTotalPaise) {
   await saveSafely(pool)
 
   const payers = pool.members.filter((m) => String(m.userId) !== String(pool.hostUserId))
+  await Payment.deleteMany({ poolId: pool._id })
   await Payment.insertMany(payers.map((m) => ({ poolId: pool._id, userId: m.userId, hostId: pool.hostUserId, amountPaise: m.finalSharePaise, isDemo: pool.isDemo })))
   return viewPool(pool, userId)
 }
