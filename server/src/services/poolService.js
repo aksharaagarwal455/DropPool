@@ -174,6 +174,19 @@ async function confirmMembership(userId, poolId) {
   return viewPool(pool, userId)
 }
 
+async function confirmAllMembers(userId, poolId) {
+  const pool = await loadForMember(userId, poolId)
+  if (pool.status !== 'proposed') return viewPool(pool, userId)
+  for (const m of pool.members) {
+    m.confirmed = true
+  }
+  pool.status = 'confirmed'
+  pushHistory(pool, 'confirmed', userId, 'All members confirmed')
+  await saveSafely(pool)
+  await ShoppingIntent.updateMany({ _id: { $in: pool.members.map((m) => m.intentId) } }, { $set: { status: 'pooled' } })
+  return viewPool(pool, userId)
+}
+
 async function cancelInternal(pool, byUserId, note) {
   const before = pool.status
   pool.status = 'cancelled'
@@ -216,8 +229,15 @@ async function recordActualTotal(userId, poolId, actualTotalPaise) {
   const pool = await loadForHost(userId, poolId)
   if (pool.status !== 'confirmed') throw new AppError('Record the checkout total once every member has confirmed', 409)
   if (!isPaise(actualTotalPaise) || actualTotalPaise <= 0 || actualTotalPaise > 100000000) throw new AppError('Enter the real checkout total in paise', 422)
-  const host = await User.findById(userId).select('+upiId name')
-  if (!host?.upiId) throw new AppError('Add your UPI id in your profile before collecting payments', 422)
+  const host = await User.findById(userId).select('+upiId name isDemo')
+  if (!host?.upiId) {
+    if (host?.isDemo) {
+      host.upiId = `${(host.name || 'kabir').toLowerCase().replace(/\s+/g, '')}.demo@okaxis`
+      await host.save()
+    } else {
+      throw new AppError('Add your UPI id in your profile before collecting payments', 422)
+    }
+  }
 
   let result
   try {
@@ -346,4 +366,4 @@ async function viewPool(pool, viewerId) {
   }
 }
 
-module.exports = { createPool, confirmMembership, leavePool, recordActualTotal, hostTransition, listMine, getPool, PAYMENT_NOTICE, saveSafely, pushHistory }
+module.exports = { createPool, confirmMembership, confirmAllMembers, leavePool, recordActualTotal, hostTransition, listMine, getPool, PAYMENT_NOTICE, saveSafely, pushHistory }

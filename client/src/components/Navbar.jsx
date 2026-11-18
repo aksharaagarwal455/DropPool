@@ -5,10 +5,11 @@ import BrandLogo from './BrandLogo'
 import avatarAanya from '../assets/avatar_aanya.png'
 
 export default function Navbar({ meta }) {
-  const { user, isAuthenticated, logout, quickLogin } = useAuth()
+  const { user, isAuthenticated, logout, quickLogin, meta: authMeta } = useAuth()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
+  const isDemo = (meta?.demoMode ?? authMeta?.demoMode) !== false
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -30,6 +31,47 @@ export default function Navbar({ meta }) {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F8FAF6]/90 backdrop-blur-md border-b border-[#E2EBDD]">
+      {/* 1-Click Persona Switcher Bar */}
+      {isDemo && (
+        <div className="bg-[#0b2914] text-white px-3 sm:px-6 py-1.5 border-b border-[#165a2d] flex items-center justify-between text-xs overflow-x-auto gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[#84CC16] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-[#84CC16] animate-pulse" />
+              Switch Persona:
+            </span>
+            <div className="flex items-center gap-1.5">
+              {[
+                { key: 'kabir', label: '👑 Kabir (Host)' },
+                { key: 'aarav', label: 'Aarav' },
+                { key: 'diya', label: 'Diya' },
+                { key: 'meera', label: 'Meera' },
+                { key: 'rohan', label: 'Rohan' },
+              ].map((p) => {
+                const isActive = user?.email?.startsWith(`${p.key}@`)
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => quickLogin(p.key)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#84CC16] text-[#0F3D1E] font-extrabold shadow-sm ring-2 ring-white/40 scale-105'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-[11px] text-gray-300 shrink-0">
+            <span>Active: <strong className="text-white font-bold">{user?.name || 'Guest'}</strong></span>
+            {user?.hostel && <span className="text-lime-300/80">({user.hostel} · Blk {user.block})</span>}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Left: Brand Logo & Campus Badge */}
@@ -53,10 +95,9 @@ export default function Navbar({ meta }) {
                 to={item.path}
                 end={item.path === '/'}
                 className={({ isActive }) =>
-                  `inline-flex items-center h-full px-2 lg:px-3 text-sm transition-colors relative font-medium ${
-                    isActive
-                      ? 'text-[#0F3D1E] font-bold'
-                      : 'text-[#475569] hover:text-[#0F3D1E]'
+                  `inline-flex items-center h-full px-2 lg:px-3 text-sm transition-colors relative font-medium ${isActive
+                    ? 'text-[#0F3D1E] font-bold'
+                    : 'text-[#475569] hover:text-[#0F3D1E]'
                   }`
                 }
               >
@@ -73,7 +114,7 @@ export default function Navbar({ meta }) {
           </nav>
 
           {/* Right: User Avatar & Session Controls */}
-          <div className="flex items-center gap-3" ref={menuRef}>
+          <div className="relative flex items-center gap-3" ref={menuRef}>
             {isAuthenticated ? (
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -107,7 +148,7 @@ export default function Navbar({ meta }) {
             )}
 
             {dropdownOpen && isAuthenticated && (
-              <div className="absolute right-4 top-16 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
+              <div className="absolute right-0 top-14 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in duration-150">
                 <div className="px-4 py-3 border-b border-gray-100 bg-[#F0FDF4]/50">
                   <div className="flex items-center gap-3">
                     <img
@@ -150,7 +191,7 @@ export default function Navbar({ meta }) {
                   </Link>
                 </div>
 
-                {meta?.demoMode && (
+                {isDemo && (
                   <div className="px-4 py-2.5 border-t border-gray-100 bg-[#F8FAF6]">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#65A30D] mb-1.5">
                       Switch Demo Account

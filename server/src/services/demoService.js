@@ -33,7 +33,7 @@ async function seed() {
   const passwordHash = await hashPassword(DEMO_PASSWORD)
   const users = {}
   for (const [key, name, hostel, block, floor] of PEOPLE) {
-    users[key] = await User.create({ name, email: `${key}@${DEMO_DOMAIN}`, passwordHash, hostel, block, floor, emailVerified: true, isDemo: true, upiId: key === 'sara' ? 'sara.demo@okaxis' : null })
+    users[key] = await User.create({ name, email: `${key}@${DEMO_DOMAIN}`, passwordHash, hostel, block, floor, emailVerified: true, isDemo: true, upiId: `${key}.demo@okaxis` })
   }
   users.admin = await User.create({ name: 'Demo Admin', email: `admin@${DEMO_DOMAIN}`, passwordHash, hostel: 'Shri Shanta Nikay', block: 'A', floor: '1', role: 'admin', emailVerified: true, isDemo: true })
 

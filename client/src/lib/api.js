@@ -64,6 +64,7 @@ export const Api = {
     create: (intentIds) => unwrap(http.post('/api/pools', { intentIds })).then((d) => d?.pool || d),
     get: (id) => unwrap(http.get(`/api/pools/${id}`)).then((d) => d?.pool || d),
     confirm: (id) => unwrap(http.post(`/api/pools/${id}/confirm`)).then((d) => d?.pool || d),
+    confirmAll: (id) => unwrap(http.post(`/api/pools/${id}/confirm-all`)).then((d) => d?.pool || d),
     leave: (id) => unwrap(http.post(`/api/pools/${id}/leave`)).then((d) => d?.pool || d),
     actualTotal: (id, actualTotalPaise) => unwrap(http.post(`/api/pools/${id}/actual-total`, { actualTotalPaise })).then((d) => d?.pool || d),
     status: (id, body) => unwrap(http.post(`/api/pools/${id}/status`, body)).then((d) => d?.pool || d),

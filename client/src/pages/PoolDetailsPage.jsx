@@ -152,6 +152,20 @@ export default function PoolDetailsPage() {
     }
   }
 
+  // Fast-track demo: Confirm all unconfirmed members in 1-click
+  async function handleConfirmAll() {
+    setActionLoading(true)
+    setActionError('')
+    try {
+      const updated = await Api.pools.confirmAll(pool.id)
+      setPool(updated?.pool || updated)
+    } catch (err) {
+      setActionError(errorMessage(err))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   // Member Action: Leave pool
   async function handleLeavePool() {
     if (!window.confirm('Are you sure you want to leave this pool? This may cancel or recalculate the pool for other students.')) {
@@ -546,6 +560,36 @@ export default function PoolDetailsPage() {
           )}
         </div>
 
+        {/* Fast-Track Demo Confirmation Banner */}
+        {pool.status === 'proposed' && pool.members?.some((m) => !m.confirmed) && (
+          <div className="bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-primary-500/10 border-2 border-amber-400 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-amber-400 text-amber-950 tracking-wider">
+                  ⚡ 1-Click Fast Track
+                </span>
+                <span className="text-xs font-bold text-amber-900">
+                  Waiting for: {pool.members.filter((m) => !m.confirmed).map((m) => m.name).join(', ')}
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-[#0F3D1E]">
+                Auto-confirm remaining members & proceed to host checkout
+              </h3>
+              <p className="text-xs text-gray-600">
+                Click below to instantly confirm all member carts in 1 click without manually switching accounts!
+              </p>
+            </div>
+            <button
+              onClick={handleConfirmAll}
+              disabled={actionLoading}
+              className="w-full sm:w-auto shrink-0 px-6 py-3.5 rounded-2xl bg-[#0F3D1E] hover:bg-[#165a2d] text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <span>⚡</span>
+              <span>{actionLoading ? 'Confirming...' : 'Confirm All Members Now'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Member Action Bar (Confirm or Leave) */}
         {(pool.actions?.canConfirm || pool.actions?.canLeave) && !isCancelled && (
           <div className="bg-primary-50 border border-primary-200 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -847,9 +891,18 @@ export default function PoolDetailsPage() {
                       )}
 
                       <form onSubmit={handleRecordActualTotal} className="space-y-2 pt-2">
-                        <label className="block text-xs font-medium text-primary-100">
-                          External Checkout Total (₹)
-                        </label>
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-medium text-primary-100">
+                            External Checkout Total (₹)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setActualTotalRupees(((pool.optimization?.pooledTotalPaise || 30200) / 100).toFixed(2))}
+                            className="text-[11px] text-lime-300 hover:text-lime-200 underline cursor-pointer"
+                          >
+                            Fill estimated ₹{((pool.optimization?.pooledTotalPaise || 30200) / 100).toFixed(2)}
+                          </button>
+                        </div>
                         <div className="flex gap-2">
                           <input
                             type="number"
@@ -857,12 +910,12 @@ export default function PoolDetailsPage() {
                             min="1"
                             value={actualTotalRupees}
                             onChange={(e) => setActualTotalRupees(e.target.value)}
-                            placeholder="e.g. 330.00"
+                            placeholder={`e.g. ${((pool.optimization?.pooledTotalPaise || 30200) / 100).toFixed(2)}`}
                             className="flex-1 px-3 py-2 rounded-xl bg-primary-950 border border-primary-700 text-white text-xs focus:ring-2 focus:ring-primary-400 focus:outline-none"
                           />
                           <button
                             type="submit"
-                            disabled={actionLoading || !user?.hasUpiId}
+                            disabled={actionLoading || (!user?.hasUpiId && !pool.isDemo)}
                             className="px-4 py-2 rounded-xl bg-primary-400 hover:bg-primary-300 text-primary-950 font-bold text-xs transition-colors shrink-0 disabled:opacity-50"
                           >
                             Lock & Bill Shares
