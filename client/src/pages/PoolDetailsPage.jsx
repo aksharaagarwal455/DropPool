@@ -48,7 +48,7 @@ export default function PoolDetailsPage() {
 
   // Modals
   const [showPickupModal, setShowPickupModal] = useState(false)
-  const [pickupLocation, setPickupLocation] = useState('')
+  const [pickupLocation, setPickupLocation] = useState('Hostel Common Room')
   const [pickupEta, setPickupEta] = useState('')
 
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -258,6 +258,20 @@ export default function PoolDetailsPage() {
     try {
       await Api.payments.confirm(paymentId)
       await fetchPool()
+    } catch (err) {
+      setActionError(errorMessage(err))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  // Fast-track demo: Confirm all member payments in 1-click
+  async function handleConfirmAllPayments() {
+    setActionLoading(true)
+    setActionError('')
+    try {
+      const updated = await Api.pools.confirmPayments(pool.id)
+      setPool(updated?.pool || updated)
     } catch (err) {
       setActionError(errorMessage(err))
     } finally {
@@ -956,6 +970,18 @@ export default function PoolDetailsPage() {
                       </span>
                     </div>
 
+                    {pool.status === 'awaiting_payments' && pool.payments?.some((p) => p.status !== 'confirmed') && (
+                      <button
+                        type="button"
+                        onClick={handleConfirmAllPayments}
+                        disabled={actionLoading}
+                        className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        <span>⚡</span>
+                        <span>{actionLoading ? 'Confirming...' : 'Demo 1-Click: Confirm All Member Shares'}</span>
+                      </button>
+                    )}
+
                     <div className="space-y-2">
                       {pool.payments.map((p) => (
                         <div key={p.id} className="bg-primary-800/70 p-3 rounded-xl border border-primary-700 text-xs flex items-center justify-between">
@@ -1018,9 +1044,10 @@ export default function PoolDetailsPage() {
                       <button
                         onClick={() => handleHostTransition('order_placed')}
                         disabled={actionLoading}
-                        className="w-full py-3 rounded-xl bg-primary-400 hover:bg-primary-300 text-primary-950 font-bold text-sm transition-colors shadow-xs"
+                        className="w-full py-3.5 rounded-xl bg-lime-400 hover:bg-lime-300 text-primary-950 font-extrabold text-sm transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                       >
-                        {actionLoading ? 'Updating...' : '🛍️ Mark Order Placed Externally'}
+                        <span>🛍️</span>
+                        <span>{actionLoading ? 'Updating...' : 'Mark Order Placed on Platform'}</span>
                       </button>
                     )}
 
@@ -1028,9 +1055,10 @@ export default function PoolDetailsPage() {
                       <button
                         onClick={() => setShowPickupModal(true)}
                         disabled={actionLoading}
-                        className="w-full py-3 rounded-xl bg-primary-400 hover:bg-primary-300 text-primary-950 font-bold text-sm transition-colors shadow-xs"
+                        className="w-full py-3.5 rounded-xl bg-lime-400 hover:bg-lime-300 text-primary-950 font-extrabold text-sm transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                       >
-                        📍 Mark Ready for Hostel Pickup
+                        <span>📍</span>
+                        <span>Mark Ready for Hostel Pickup</span>
                       </button>
                     )}
 
@@ -1038,9 +1066,10 @@ export default function PoolDetailsPage() {
                       <button
                         onClick={() => handleHostTransition('completed')}
                         disabled={actionLoading}
-                        className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-400 text-primary-950 font-bold text-sm transition-colors shadow-xs"
+                        className="w-full py-3.5 rounded-xl bg-green-400 hover:bg-green-300 text-primary-950 font-extrabold text-sm transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                       >
-                        ✓ Mark Pool Run Completed
+                        <span>✓</span>
+                        <span>Complete Pool Run</span>
                       </button>
                     )}
                   </div>

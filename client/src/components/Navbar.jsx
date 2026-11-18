@@ -41,9 +41,9 @@ export default function Navbar({ meta }) {
             </span>
             <div className="flex items-center gap-1.5">
               {[
-                { key: 'kabir', label: '👑 Kabir (Host)' },
                 { key: 'aarav', label: 'Aarav' },
                 { key: 'diya', label: 'Diya' },
+                { key: 'kabir', label: 'Kabir' },
                 { key: 'meera', label: 'Meera' },
                 { key: 'rohan', label: 'Rohan' },
               ].map((p) => {
@@ -59,7 +59,7 @@ export default function Navbar({ meta }) {
                         : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                   >
-                    {p.label}
+                    {isActive ? `✓ ${p.label}` : p.label}
                   </button>
                 )
               })}

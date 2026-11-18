@@ -260,6 +260,22 @@ async function recordActualTotal(userId, poolId, actualTotalPaise) {
   return viewPool(pool, userId)
 }
 
+async function confirmAllPayments(userId, poolId) {
+  const pool = await loadForHost(userId, poolId)
+  if (pool.status !== 'awaiting_payments') return viewPool(pool, userId)
+  const payments = await Payment.find({ poolId: pool._id })
+  for (const p of payments) {
+    p.status = 'confirmed'
+    p.decidedAt = new Date()
+    if (!p.utr) p.utr = 'UPI' + Math.floor(1000000000 + Math.random() * 9000000000)
+    await p.save()
+  }
+  pool.status = 'payments_confirmed'
+  pushHistory(pool, 'payments_confirmed', userId, 'All member shares confirmed (demo fast-track)')
+  await saveSafely(pool)
+  return viewPool(pool, userId)
+}
+
 async function hostTransition(userId, poolId, to, body = {}) {
   const pool = await loadForHost(userId, poolId)
   if (!HOST_TRIGGERED.includes(to)) throw new AppError('That step happens automatically', 422)
@@ -367,4 +383,4 @@ async function viewPool(pool, viewerId) {
   }
 }
 
-module.exports = { createPool, confirmMembership, confirmAllMembers, leavePool, recordActualTotal, hostTransition, listMine, getPool, PAYMENT_NOTICE, saveSafely, pushHistory }
+module.exports = { createPool, confirmMembership, confirmAllMembers, confirmAllPayments, leavePool, recordActualTotal, hostTransition, listMine, getPool, PAYMENT_NOTICE, saveSafely, pushHistory }
