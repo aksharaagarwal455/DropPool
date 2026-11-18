@@ -88,12 +88,16 @@ export default function MatchingResultsPage() {
 
   // Create pool from matched proposal
   const handleCreatePool = async () => {
-    if (!proposal?.intentIds?.length) return
+    const ids = proposal?.intentIds || proposal?.proposal?.intentIds
+    if (!ids?.length) {
+      setMatchingError('No matched intents found to form a pool.')
+      return
+    }
     setCreatingPool(true)
     setMatchingError(null)
 
     try {
-      const res = await Api.pools.create(proposal.intentIds)
+      const res = await Api.pools.create(ids)
       const poolId = res?.pool?.id || res?.id
       if (poolId) {
         navigate(`/pools/${poolId}`)
@@ -205,11 +209,10 @@ export default function MatchingResultsPage() {
           <div className="bg-white rounded-3xl p-6 border border-[#BBF7D0] shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  proposal.targetReached
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-amber-100 text-amber-900 border border-amber-300'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${proposal.targetReached
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : 'bg-amber-100 text-amber-900 border border-amber-300'
+                  }`}>
                   {proposal.targetReached ? '🎯 Free Delivery Target Unlocked' : '⚡ Partial Pool'}
                 </span>
                 <span className="text-xs text-gray-500 font-medium">
@@ -231,9 +234,8 @@ export default function MatchingResultsPage() {
             {/* Progress track */}
             <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  proposal.targetReached ? 'bg-[#15803D]' : 'bg-amber-500'
-                }`}
+                className={`h-full rounded-full transition-all duration-500 ${proposal.targetReached ? 'bg-[#15803D]' : 'bg-amber-500'
+                  }`}
                 style={{ width: `${targetPct}%` }}
               />
             </div>
