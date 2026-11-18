@@ -22,9 +22,16 @@ function createApp(options = {}) {
 
   app.use(helmet())
   app.use(cors({
-    origin: env.clientOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, mobile apps, health checks, server-to-server)
+      if (!origin || env.clientOrigins.includes(origin) || env.clientOrigins.includes('*')) {
+        return callback(null, true)
+      }
+      return callback(null, false)
+    },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   }))
   app.use('/api/ai', express.json({ limit: '8mb' }), aiRoutes)
   app.use(express.json({ limit: '1mb' }))

@@ -11,12 +11,12 @@ const DEMO_DOMAIN = 'demo.droppool.test'
 const DEMO_PASSWORD = 'demo-pass-123'
 
 const PEOPLE = [
-  ['aarav', 'Aarav Mehta', 'Gargi Hostel', 'A', '2'], ['diya', 'Diya Sharma', 'Gargi Hostel', 'A', '2'],
-  ['kabir', 'Kabir Singh', 'Gargi Hostel', 'A', '3'], ['meera', 'Meera Iyer', 'Gargi Hostel', 'A', '2'],
+  ['aarav', 'Aarav Mehta', 'Shri Shanta Nikay', 'A', '2'], ['diya', 'Diya Sharma', 'Shri Shanta Nikay', 'A', '2'],
+  ['kabir', 'Kabir Singh', 'Shri Shanta Nikay', 'A', '3'], ['meera', 'Meera Iyer', 'Shri Shanta Nikay', 'A', '2'],
   ['rohan', 'Rohan Das', 'Tagore Hostel', 'C', '1'], ['ishita', 'Ishita Nair', 'Tagore Hostel', 'C', '1'],
-  ['vihaan', 'Vihaan Rao', 'Gargi Hostel', 'A', '1'], ['arjun', 'Arjun Verma', 'Tagore Hostel', 'A', '2'],
-  ['sara', 'Sara Khan', 'Gargi Hostel', 'B', '3'], ['dev', 'Dev Patel', 'Gargi Hostel', 'B', '3'],
-  ['tanvi', 'Tanvi Joshi', 'Gargi Hostel', 'B', '2'],
+  ['vihaan', 'Vihaan Rao', 'Shri Shanta Nikay', 'A', '1'], ['arjun', 'Arjun Verma', 'Tagore Hostel', 'A', '2'],
+  ['sara', 'Sara Khan', 'Shri Shanta Nikay', 'B', '3'], ['dev', 'Dev Patel', 'Shri Shanta Nikay', 'B', '3'],
+  ['tanvi', 'Tanvi Joshi', 'Shri Shanta Nikay', 'B', '2'],
 ]
 
 async function reset() {
@@ -35,7 +35,7 @@ async function seed() {
   for (const [key, name, hostel, block, floor] of PEOPLE) {
     users[key] = await User.create({ name, email: `${key}@${DEMO_DOMAIN}`, passwordHash, hostel, block, floor, emailVerified: true, isDemo: true, upiId: key === 'sara' ? 'sara.demo@okaxis' : null })
   }
-  users.admin = await User.create({ name: 'Demo Admin', email: `admin@${DEMO_DOMAIN}`, passwordHash, hostel: 'Gargi Hostel', block: 'A', floor: '1', role: 'admin', emailVerified: true, isDemo: true })
+  users.admin = await User.create({ name: 'Demo Admin', email: `admin@${DEMO_DOMAIN}`, passwordHash, hostel: 'Shri Shanta Nikay', block: 'A', floor: '1', role: 'admin', emailVerified: true, isDemo: true })
 
   const now = Date.now()
   const window = (startMin, endMin) => ({ windowStart: new Date(now + startMin * 60000), windowEnd: new Date(now + endMin * 60000) })
@@ -75,7 +75,7 @@ async function seed() {
     password: DEMO_PASSWORD,
     accounts: [...PEOPLE.map((p) => `${p[0]}@${DEMO_DOMAIN}`), `admin@${DEMO_DOMAIN}`],
     scenarios: [
-      'aarav@: four Zepto students in Gargi Block A. Run matching to see a profitable pool.',
+      'aarav@: four Zepto students in Shri Shanta Nikay Block A. Run matching to see a profitable pool.',
       'rohan@: two Instamart students who both have free delivery. Matching recommends ordering individually.',
       'vihaan@ and arjun@: intents that stay independent (different time window or hostel).',
       `sara@ (host): pool ${recorded.code} is in awaiting_payments with one claimed and one confirmed payment.`,

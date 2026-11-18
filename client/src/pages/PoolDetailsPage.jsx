@@ -1018,7 +1018,7 @@ export default function PoolDetailsPage() {
               <div className="space-y-3 text-xs">
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">
-                    Pickup Location * (e.g. Gargi A Common Room)
+                    Pickup Location * (e.g. hostel gate or common room)
                   </label>
                   <input
                     type="text"

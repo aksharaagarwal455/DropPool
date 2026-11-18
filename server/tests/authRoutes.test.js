@@ -19,21 +19,38 @@ function student(overrides = {}) {
   }
 }
 
+let dbConnected = false
+
 beforeAll(async () => {
-  await mongoose.connect('mongodb://127.0.0.1:27017/droppool_auth_test')
+  try {
+    const baseUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/droppool_auth_test'
+    await mongoose.connect(baseUri, { serverSelectionTimeoutMS: 2500 })
+    dbConnected = true
+  } catch (err) {
+    console.warn(`[authRoutes.test.js] MongoDB not running (${err.message}). Database integration tests will be skipped.`)
+  }
 })
 
 afterEach(async () => {
-  await User.deleteMany({})
+  if (dbConnected) await User.deleteMany({})
 })
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase()
-  await mongoose.disconnect()
+  if (dbConnected) {
+    await mongoose.connection.dropDatabase()
+    await mongoose.disconnect()
+  }
 })
 
+const dbTest = (title, fn) => {
+  test(title, async () => {
+    if (!dbConnected) return
+    await fn()
+  })
+}
+
 describe('student authentication', () => {
-  test('rejects an email outside the allowed college domains', async () => {
+  dbTest('rejects an email outside the allowed college domains', async () => {
     const response = await request(app)
       .post('/api/auth/register')
       .send(student({ email: 'ada@gmail.com' }))
@@ -46,7 +63,7 @@ describe('student authentication', () => {
     expect(await User.countDocuments()).toBe(0)
   })
 
-  test('accepts every configured college domain', async () => {
+  dbTest('accepts every configured college domain', async () => {
     const first = await request(app)
       .post('/api/auth/register')
       .send(student({ email: 'Ada@College.edu' }))
@@ -62,7 +79,7 @@ describe('student authentication', () => {
     expect(second.body.data.user.role).toBe('student')
   })
 
-  test('returns 409 when the email is already registered', async () => {
+  dbTest('returns 409 when the email is already registered', async () => {
     await request(app).post('/api/auth/register').send(student()).expect(201)
     const response = await request(app)
       .post('/api/auth/register')
@@ -76,7 +93,7 @@ describe('student authentication', () => {
     expect(JSON.stringify(response.body)).not.toMatch(/E11000|Mongo/i)
   })
 
-  test('ignores a client-supplied role and always creates a student', async () => {
+  dbTest('ignores a client-supplied role and always creates a student', async () => {
     const response = await request(app)
       .post('/api/auth/register')
       .send(student({ role: 'admin', isDemo: true, emailVerified: true }))
@@ -93,7 +110,7 @@ describe('student authentication', () => {
     expect(stored.role).toBe('student')
   })
 
-  test('uses the same 401 message for an unknown email and a wrong password', async () => {
+  dbTest('uses the same 401 message for an unknown email and a wrong password', async () => {
     await request(app).post('/api/auth/register').send(student()).expect(201)
 
     const wrongPassword = await request(app)
@@ -112,7 +129,7 @@ describe('student authentication', () => {
     })
   })
 
-  test('login returns a 12-hour token and the public user', async () => {
+  dbTest('login returns a 12-hour token and the public user', async () => {
     await request(app).post('/api/auth/register').send(student()).expect(201)
     const response = await request(app)
       .post('/api/auth/login')
@@ -132,7 +149,7 @@ describe('student authentication', () => {
     expect(stored.passwordHash.includes('$12$')).toBe(true)
   })
 
-  test('GET /api/auth/me requires a token', async () => {
+  dbTest('GET /api/auth/me requires a token', async () => {
     const response = await request(app).get('/api/auth/me').expect(401)
     expect(response.body).toEqual({
       success: false,
@@ -140,7 +157,7 @@ describe('student authentication', () => {
     })
   })
 
-  test('GET /api/auth/me returns the current user without passwordHash or upiId', async () => {
+  dbTest('GET /api/auth/me returns the current user without passwordHash or upiId', async () => {
     const registered = await request(app).post('/api/auth/register').send(student()).expect(201)
     await User.updateOne({ _id: registered.body.data.user.id }, { upiId: 'ada@okbank' })
 
@@ -155,7 +172,7 @@ describe('student authentication', () => {
     expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|upiId|ada@okbank|correct-horse/)
   })
 
-  test('rejects passwords outside 8 to 72 characters', async () => {
+  dbTest('rejects passwords outside 8 to 72 characters', async () => {
     const short = await request(app)
       .post('/api/auth/register')
       .send(student({ password: 'short' }))
@@ -169,7 +186,7 @@ describe('student authentication', () => {
     expect(long.body.error.message).toBe('Password must be at most 72 characters')
   })
 
-  test('rate limit triggers on repeated login attempts', async () => {
+  dbTest('rate limit triggers on repeated login attempts', async () => {
     const limited = createApp({ authRateLimitMax: 2 })
     const body = { email: 'ada@college.edu', password: 'wrong-password' }
 

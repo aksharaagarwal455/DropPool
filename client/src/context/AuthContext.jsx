@@ -4,14 +4,14 @@ import { Api, getToken, setToken, clearToken, errorMessage } from '../lib/api'
 const AuthContext = createContext(null)
 
 export const DEMO_PERSONAS = [
-  { key: 'aarav', name: 'Aarav Mehta', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
-  { key: 'diya', name: 'Diya Sharma', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
-  { key: 'kabir', name: 'Kabir Singh', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
-  { key: 'meera', name: 'Meera Iyer', hostel: 'Gargi A', platform: 'Zepto', role: 'Student' },
+  { key: 'aarav', name: 'Aarav Mehta', hostel: 'Shri Shanta Nikay A', platform: 'Zepto', role: 'Student' },
+  { key: 'diya', name: 'Diya Sharma', hostel: 'Shri Shanta Nikay A', platform: 'Zepto', role: 'Student' },
+  { key: 'kabir', name: 'Kabir Singh', hostel: 'Shri Shanta Nikay A', platform: 'Zepto', role: 'Student' },
+  { key: 'meera', name: 'Meera Iyer', hostel: 'Shri Shanta Nikay A', platform: 'Zepto', role: 'Student' },
   { key: 'rohan', name: 'Rohan Das', hostel: 'Tagore C', platform: 'Instamart', role: 'Free delivery (reject)' },
   { key: 'ishita', name: 'Ishita Nair', hostel: 'Tagore C', platform: 'Instamart', role: 'Free delivery (reject)' },
-  { key: 'vihaan', name: 'Vihaan Rao', hostel: 'Gargi A', platform: 'Blinkit', role: 'Independent' },
-  { key: 'sara', name: 'Sara Khan', hostel: 'Gargi B', platform: 'Blinkit', role: 'Host (awaiting payments)' },
+  { key: 'vihaan', name: 'Vihaan Rao', hostel: 'Shri Shanta Nikay A', platform: 'Blinkit', role: 'Independent' },
+  { key: 'sara', name: 'Sara Khan', hostel: 'Shri Shanta Nikay B', platform: 'Blinkit', role: 'Host (awaiting payments)' },
 ]
 
 export function AuthProvider({ children }) {
@@ -20,12 +20,27 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
   const [meta, setMeta] = useState(null)
+  const [isServerWaking, setIsServerWaking] = useState(false)
 
-  // Fetch meta on mount
+  // Fetch meta on mount with cold-start detection (e.g. Render free tier)
   useEffect(() => {
+    let resolved = false
+    const timer = setTimeout(() => {
+      if (!resolved) setIsServerWaking(true)
+    }, 3000)
+
     Api.meta()
-      .then((data) => setMeta(data))
-      .catch(() => {})
+      .then((data) => {
+        resolved = true
+        setIsServerWaking(false)
+        setMeta(data)
+      })
+      .catch(() => {
+        resolved = true
+        setIsServerWaking(false)
+      })
+
+    return () => clearTimeout(timer)
   }, [])
 
   // Verify current token
@@ -165,6 +180,7 @@ export function AuthProvider({ children }) {
         loading,
         authError,
         meta,
+        isServerWaking,
         login,
         register,
         logout,

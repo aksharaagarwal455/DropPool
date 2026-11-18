@@ -39,15 +39,29 @@ Routes stay thin. Services own rules. Controllers are omitted until a route does
 
 `POST /api/auth/register` and `POST /api/auth/login` issue the 12-hour access token. Register always stores `role: student` and ignores a role sent by the client. Both routes share a rate limiter. `GET /api/auth/me` uses `requireAuth` and returns the public user. `passwordHash` and `upiId` stay off every auth response. The session and admin ping routes remain for middleware checks.
 
-## Money (not built yet)
+## Money & Cost Optimization
 
-When the optimizer lands, it lives in one server service:
+The optimizer lives on the server in `src/services/optimization/optimizer.js` and `src/services/fees/feeRules.js`:
+- All currency calculations use integer paise (`100 paise = ₹1.00`). No floating-point math.
+- Fee targets (`feeTargets`) calculate platform free delivery and small-cart fee thresholds.
+- Recommends a pool ONLY if every member has positive net savings (`savingsPaise > 0`).
+- Unknown fees remain unknown (`insufficient_data`).
 
-- Store money as integer paise.
-- Do not use floating-point arithmetic.
-- Fee profiles are editable data, labelled illustrative, and snapshotted onto a recommendation.
-- Recommend a pool only when every member has positive net savings.
-- Leave unknown fees unknown. Do not coerce them to zero.
+## Campus Distance Model & Goal-Driven Matching
+
+Located in `src/utils/distance.js` and `src/services/matching/matcher.js`:
+- Campus map: `src/config/campusMap.json` defining hostel coordinates, walk speed (80 m/min), and detour factor (1.3).
+- Proximity tiers: 0 (same floor), 1 (same block), 2 (same hostel), 3 (nearby hostel $\le$ `NEAR_MIN` minutes), 4 (campus-wide).
+- Expanding rings: Searches for compatible carts starting at tier 0 through `MAX_PROXIMITY_TIER` (default 3).
+- Goal-driven stopping: Stops adding members as soon as the platform's free delivery threshold is crossed with fewest members needed.
+- Marginal savings threshold: Refuses to add a student if their marginal contribution saves peers $< ₹5.00$ (`MIN_MARGINAL_SAVING_PAISE = 500`).
+- Board nearest-first: Active demand board orders other students by walking distance and proximity tier.
+
+## Deployment Architecture
+
+- **Backend**: Hosted on Render free tier (`render.yaml`) binding to `0.0.0.0` with `/api/health` liveness probe and multi-origin CORS support.
+- **Frontend**: Hosted on Vercel (`vercel.json`) with SPA fallback and cold-start wake detection banner for sleeping Render instances.
+- **Database**: MongoDB Atlas M0 cluster connected via `MONGO_URI`.
 
 ## Data isolation
 

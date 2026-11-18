@@ -40,13 +40,13 @@ npm run dev          # Runs on http://localhost:5173
 
 ### Step 1: Login via Quick Persona (Aarav Mehta)
 1. Navigate to `http://localhost:5173/login`.
-2. Under **Quick Demo Personas**, click **Aarav Mehta** (`aarav@banasthali.in`, Gargi A, Host persona).
+2. Under **Quick Demo Personas**, click **Aarav Mehta** (`aarav@banasthali.in`, Shri Shanta Nikay A, Host persona).
 3. The app authenticates via a real JWT token and loads the **Campus Dashboard**.
 
 ### Step 2: Create a Shopping Intent (Solo Cart)
 1. Click **+ Create Shopping Intent** (or visit `/intent`).
 2. Select Platform: **Zepto**.
-3. Notice default hostel is prefilled from profile (**Gargi A**).
+3. Notice default hostel is prefilled from profile (**Shri Shanta Nikay, Block A**).
 4. Select Delivery Window: default is current time + 45 minutes (validated $\le 24$h).
 5. Add Cart Items:
    - Item 1: **"Amul Toned Milk"**, Qty: `1`, Price: `₹60`
@@ -106,7 +106,7 @@ npm run dev          # Runs on http://localhost:5173
 ### Step 7: Order Delivery & Hostel Pickup
 1. Host clicks **Mark Order Placed Externally** $\rightarrow$ status becomes `order_placed`.
 2. Host clicks **Mark Ready for Hostel Pickup**:
-   - Modal prompts for pickup location: *"Gargi A Common Room"* and optional ETA.
+   - Modal prompts for pickup location: *"Nikay common room"* and optional ETA.
    - Clicks **Notify Members** $\rightarrow$ status becomes `ready_for_pickup`.
    - All members see the highlighted pickup location card.
 3. Host marks **Mark Pool Run Completed** $\rightarrow$ status becomes `completed`.

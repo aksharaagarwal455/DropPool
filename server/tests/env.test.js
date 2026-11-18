@@ -26,3 +26,11 @@ describe('environment', () => {
     expect(resolveEnv({}).demoMode).toBe(false)
   })
 })
+
+describe('client origins', () => {
+  test('CLIENT_ORIGIN accepts a comma-separated list and strips trailing slashes', () => {
+    expect(resolveEnv({ CLIENT_ORIGIN: 'https://a.vercel.app/, http://localhost:5173' }).clientOrigins)
+      .toEqual(['https://a.vercel.app', 'http://localhost:5173'])
+    expect(resolveEnv({}).clientOrigins).toEqual(['http://localhost:5173'])
+  })
+})

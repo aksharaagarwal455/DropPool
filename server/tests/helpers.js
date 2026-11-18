@@ -34,7 +34,14 @@ function intentBody(overrides = {}) {
 }
 
 async function connect(name) {
-  await mongoose.connect(`mongodb://127.0.0.1:27017/${name}`)
+  const baseUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI
+  let uri = `mongodb://127.0.0.1:27017/${name}`
+  if (baseUri) {
+    uri = baseUri.includes('?')
+      ? baseUri.replace('?', `${name}?`)
+      : `${baseUri.replace(/\/$/, '')}/${name}`
+  }
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: 2500 })
 }
 
 async function disconnect() {

@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: droppool-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run start -w droppool-server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_DB_NAME
+        value: droppool
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: TZ_OFFSET_MINUTES
+        value: "330"
+      - key: DEMO_MODE
+        value: "true"
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: MAX_PROXIMITY_TIER
+        value: "3"
+      - key: NEAR_MIN
+        value: "7"
+      - key: ENABLE_CAMPUS_WIDE
+        value: "false"
+      - key: MIN_MARGINAL_SAVING_PAISE
+        value: "500"
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: COLLEGE_EMAIL_DOMAINS
+        sync: false
+      - key: HOSTELS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

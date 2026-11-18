@@ -99,6 +99,76 @@ Requires an admin token. A student token receives `403`.
 { "success": true, "data": { "ok": true } }
 ```
 
-## Not in this build
+## Intents & Cart Extraction
 
-Email verification, intents, extraction, matching, optimization, pools, payments, orders, demand, and admin seed or reset are not mounted. Calling them returns `404`.
+### `POST /api/intents`
+Create shopping intent.
+Body: `platform` (`blinkit`, `zepto`, `instamart`), `items` (`[{ name, qty, unitPricePaise }]`), `windowStart`, `windowEnd`, `hostel`, `block`, `floor`, `observedFeesPaise`, `source`.
+
+### `GET /api/intents/mine`
+Get active and reserved intents for current user.
+
+### `GET /api/intents/board`
+Live campus demand board ordered nearest-first (annotated with `proximityTier`, `walkMinutes`, and `distanceLabel`). Excludes item unit prices and total amounts for student privacy.
+
+### `POST /api/ai/extract`
+Gemini-powered cart extraction from screenshot.
+Body: `imageBase64`, `mimeType`.
+Returns: `extraction: { platform, items: [{ name, qty, unitPricePaise }], observedFeesPaise, warnings }`.
+
+## Matching & Cost Optimization
+
+### `POST /api/matching/run`
+Runs the goal-driven matching engine for an intent.
+Body: `intentId`.
+Returns: `proposal` containing `status` (`pool`, `individual`, `none`, `needs_prices`, `insufficient_data`), `intentIds`, `targetReached`, `gapPaise`, `milestone`, `membersNeeded`, `explanation`, and `optimization` (`pooled`, `individual`, `members`, `recommendation`).
+
+### `POST /api/optimization/preview`
+Direct cost optimization preview for an array of intent IDs.
+Body: `intentIds`.
+
+## Pools & Peer Payments
+
+### `POST /api/pools`
+Create a pool proposal with compatible intent IDs. User becomes the host.
+Body: `intentIds`.
+
+### `GET /api/pools/mine`
+List pools where current user is a member or host.
+
+### `GET /api/pools/:id`
+Get full pool state, status, member confirmations, host details, and user's specific payment share (`myPayment`).
+
+### `POST /api/pools/:id/confirm`
+Member confirms commitment to the pool.
+
+### `POST /api/pools/:id/actual-total`
+Host inputs actual platform checkout total (`actualTotalPaise`) after placing order. Splits shares and transitions pool to `awaiting_payments`.
+
+### `POST /api/pools/:id/status`
+Host advances pool status: `order_placed`, `ready_for_pickup` (with `pickupLocation`), `completed`, or `cancelled`.
+
+### `POST /api/payments/:id/claim`
+Member claims UPI payment with optional `utr` reference.
+
+### `POST /api/payments/:id/confirm`
+Host confirms receipt of member's share.
+
+## Meta & Demand Intelligence
+
+### `GET /api/meta`
+Returns campus hostels, platforms, and server capabilities (`geminiConfigured`, `demoMode`).
+
+### `GET /api/meta/fees?platform=&subtotalPaise=`
+Calculates illustrative solo platform fees (`feesPaise`, `deliveryFeePaise`, `smallCartFeePaise`, `handlingFeePaise`).
+
+### `GET /api/demand/summary`
+Campus demand insights and heuristics (volume by hour, active hostels, top products).
+
+## Admin
+
+### `POST /api/admin/demo/seed`
+Seeds demo personas (Aarav, Diya, Kabir, Meera, Rohan, Ishita, Vihaan, Sara).
+
+### `POST /api/admin/demo/reset`
+Resets demo data without altering real student accounts.

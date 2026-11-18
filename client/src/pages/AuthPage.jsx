@@ -25,9 +25,7 @@ export default function AuthPage({ initialMode = 'login' }) {
     ? meta.collegeEmailDomains.map((d) => `@${d}`).join(' or ')
     : '@banasthali.in'
 
-  const hostelOptions = meta?.hostels?.length
-    ? meta.hostels
-    : ['Gargi Hostel', 'Maitreyi Hostel', 'Shri Shanta Nilaya', 'Kasturba Hostel', 'Vaidehi Hostel']
+  const hostelOptions = meta?.hostels?.length ? meta.hostels : []
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -178,15 +176,26 @@ export default function AuthPage({ initialMode = 'login' }) {
               <div className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-bold text-[#0F3D1E] mb-1">Hostel</label>
-                  <select
-                    value={hostel || hostelOptions[0]}
-                    onChange={(e) => setHostel(e.target.value)}
-                    className="w-full bg-[#F8FAF6] border border-[#E2EBDD] rounded-xl px-3 py-2.5 text-xs font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
-                  >
-                    {hostelOptions.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                  {hostelOptions.length > 0 ? (
+                    <select
+                      value={hostel || hostelOptions[0]}
+                      onChange={(e) => setHostel(e.target.value)}
+                      className="w-full bg-[#F8FAF6] border border-[#E2EBDD] rounded-xl px-3 py-2.5 text-xs font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
+                    >
+                      {hostelOptions.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Your hostel name"
+                      value={hostel}
+                      onChange={(e) => setHostel(e.target.value)}
+                      className="w-full bg-[#F8FAF6] border border-[#E2EBDD] rounded-xl px-3 py-2.5 text-xs font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
+                    />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

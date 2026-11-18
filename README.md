@@ -21,11 +21,37 @@ AI-powered campus demand intelligence and smart order pooling for hostel student
 1. **Campus Authentication & Profile**: College email domain validation (`banasthali.in`), hostel and room configuration, encrypted/masked UPI ID storage, and real peer trust metrics.
 2. **Intent Creation & AI Cart Extraction**: Create shopping intents with flexible delivery windows; optional AI screenshot cart extraction via Gemini with fallback to manual input.
 3. **Solo Fee Estimation**: Live debounced solo fee estimation via `/api/meta/fees`.
-4. **Demand Matching Engine**: Pairwise compatibility scoring (platform, hostel, product similarity, overlapping delivery window).
+4. **Campus Proximity & Goal-Driven Matching Engine**: Goal-driven pool formation searching in expanding proximity rings (same floor $\rightarrow$ block $\rightarrow$ hostel $\rightarrow$ nearby walking hostel $\le 7$ min). Stops once platform free delivery threshold is reached with minimum members needed; rejects additional members if marginal savings are below ₹5 (500 paise).
 5. **Cost Optimizer**: Dynamic proportional vs. equal split computation, verifying net savings for all participants before allowing pool formation.
 6. **Pool Lifecycle Management**: 7-stage state machine tracking `proposed` $\rightarrow$ `confirmed` $\rightarrow$ `awaiting_payments` $\rightarrow$ `payments_confirmed` $\rightarrow$ `order_placed` $\rightarrow$ `ready_for_pickup` $\rightarrow$ `completed` (or `cancelled`).
 7. **Host Operations & Peer Settlement**: Host checkout total recording, peer UPI QR code and UTR transaction claim, host verification/rejection, and hostel pickup dispatch.
-8. **Live Campus Demand Intelligence**: Real-time order volume, peak hours, and heuristic pooling opportunities across hostels.
+8. **Live Campus Demand Intelligence**: Real-time order volume, peak hours, and heuristic pooling opportunities across hostels sorted nearest-first.
+
+---
+
+## Campus Proximity Model & Coordinates
+
+DropPool uses Haversine distance and walking time across Banasthali Vidyapeeth hostels:
+- Model configuration: `server/src/config/campusMap.json`
+- Verification script: `npm run check:campus`
+- Proximity tiers:
+  - **Tier 0**: Same floor
+  - **Tier 1**: Same block
+  - **Tier 2**: Same hostel
+  - **Tier 3**: Nearby hostel ($\le 7$ min walk)
+  - **Tier 4**: Campus-wide (optional)
+
+> [!NOTE]
+> `campusMap.json` contains placeholder coordinates (`lat: 0.0, lng: 0.0`). Fill with actual Banasthali coordinates before campus launch and verify with `npm run check:campus`.
+
+---
+
+## Deployment (Render + Vercel + MongoDB Atlas)
+
+Complete click-by-click instructions are provided in [DEPLOY.md](DEPLOY.md):
+- **Backend API**: Render (`render.yaml` blueprint with health check at `/api/health`).
+- **Frontend SPA**: Vercel (`vercel.json` with SPA routing).
+- **Database**: MongoDB Atlas M0 Free Cluster.
 
 ---
 
@@ -43,7 +69,7 @@ copy .env.example .env
 ```
 Ensure configuration keys are present:
 - `COLLEGE_EMAIL_DOMAINS=banasthali.in,demo.droppool.test`
-- `HOSTELS=Gargi Hostel,Maitreyi Hostel,Shri Shanta Nilaya,Kasturba Hostel,Vaidehi Hostel`
+- `HOSTELS=Shri Shanta Teertham Hostel,Shri Shanta Nikay,Shri Shanta Sthaaniyam,Shri Shanta Neri,Shri Shanta Lok,Shri Shanta Sharanam`
 - `DEMO_MODE=true`
 
 ### 3. Seed Demo Data & Start Services

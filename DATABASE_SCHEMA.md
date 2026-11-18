@@ -35,6 +35,58 @@ Passwords are stored only as a bcrypt hash with 12 rounds. The schema does not s
 
 There is no `campusId` field in this foundation. Campus filtering is not implemented.
 
-## Not created yet
+## ShoppingIntent
 
-Shopping intents, cart extractions, fee profiles, match proposals, pools, pool members, payments, orders, demand snapshots, and notifications have no Mongoose models in this build.
+Collection: `shoppingintents` (Mongoose model `ShoppingIntent`).
+
+| Field | Rule |
+| --- | --- |
+| `userId` | ObjectId ref to `User`, required |
+| `platform` | Enum: `blinkit`, `zepto`, `instamart`, required |
+| `items` | Array of `{ name, qty, unitPricePaise }` |
+| `subtotalPaise` | Number (integer paise) or `null` if prices missing |
+| `windowStart`, `windowEnd` | Date timestamps (validated $\le 24$ hours window) |
+| `hostel`, `block`, `floor` | Campus location strings |
+| `status` | Enum: `active`, `reserved`, `pooled`, `cancelled`, `expired` |
+| `ready` | Boolean (true when items $\ge 1$ and all items have valid prices) |
+| `observedFeesPaise` | Number (integer paise) or `null` (from screenshot) |
+| `source` | Enum: `manual`, `screenshot` |
+| `isDemo` | Boolean |
+
+## Pool
+
+Collection: `pools` (Mongoose model `Pool`).
+
+| Field | Rule |
+| --- | --- |
+| `hostUserId` | ObjectId ref to `User`, required |
+| `platform` | Enum: `blinkit`, `zepto`, `instamart`, required |
+| `status` | Enum: `proposed`, `confirmed`, `awaiting_payments`, `payments_confirmed`, `order_placed`, `ready_for_pickup`, `completed`, `cancelled` |
+| `members` | Array of member subdocuments (userId, intentId, items, individualTotalPaise, initialSharePaise, finalSharePaise, confirmed, isHost) |
+| `targetReached` | Boolean (indicates free delivery threshold was reached) |
+| `proximityTier` | Number (0..4 distance tier of the pool group) |
+| `estimatedTotalPaise` | Number (integer paise, pooled checkout estimate) |
+| `actualTotalPaise` | Number (integer paise, recorded by host at order placement) |
+| `pickupLocation` | String (common pickup point entered by host) |
+| `isDemo` | Boolean |
+
+## Payment
+
+Collection: `payments` (Mongoose model `Payment`).
+
+| Field | Rule |
+| --- | --- |
+| `poolId` | ObjectId ref to `Pool`, required |
+| `fromUserId` | ObjectId ref to `User` (paying peer), required |
+| `toUserId` | ObjectId ref to `User` (host receiving share), required |
+| `amountPaise` | Number (integer paise), required |
+| `status` | Enum: `pending`, `claimed`, `confirmed`, `rejected`, `refunded` |
+| `utr` | String (transaction reference claimed by student) |
+| `rejectionReason` | String or `null` |
+| `isDemo` | Boolean |
+
+## FeeProfile
+
+Collection: `feeprofiles` (Mongoose model `FeeProfile`).
+
+Stores illustrative or admin-edited platform fee tiers (`deliveryFeePaise`, `smallCartFeePaise`, `smallCartThresholdPaise`, `freeDeliveryThresholdPaise`, `handlingFeePaise`, `version`, `isIllustrative`). Snapshotted into pool proposals at matching time.

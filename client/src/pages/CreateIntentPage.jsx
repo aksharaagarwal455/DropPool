@@ -26,7 +26,7 @@ export default function CreateIntentPage() {
   const [windowError, setWindowError] = useState(null)
 
   // Hostel / location defaults from user profile with optional override
-  const [hostel, setHostel] = useState(user?.hostel || 'Gargi Hostel')
+  const [hostel, setHostel] = useState(user?.hostel || '')
   const [block, setBlock] = useState(user?.block || 'A')
   const [floor, setFloor] = useState(user?.floor || '2')
 
@@ -338,6 +338,15 @@ export default function CreateIntentPage() {
   const soloFeesPaise = observedFeesPaise !== null ? observedFeesPaise : (estimatedFees?.feesPaise || 0)
   const soloTotalPaise = subtotalPaise + soloFeesPaise
 
+  // Match-ready check: at least 1 item and every item has a name and valid positive price
+  const isCartEmpty = items.length === 0
+  const isMatchReady =
+    !isCartEmpty &&
+    items.every((it) => {
+      const price = rupeesToPaise(it.unitPrice)
+      return it.name && it.name.trim().length > 0 && price !== null && !Number.isNaN(price) && price > 0
+    })
+
   return (
     <Layout meta={meta}>
       {/* Eyebrow */}
@@ -450,9 +459,53 @@ export default function CreateIntentPage() {
 
           {/* Cart Items Table */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E2EBDD] shadow-xs">
+            {/* Screenshot Extraction Review Banner */}
+            {isScreenshotSource && items.length > 0 && (
+              <div className="mb-5 p-4 rounded-2xl bg-[#ECFCCB]/60 border border-[#84CC16]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#365314]">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-[#15803D]">✨ Cart Extracted from Screenshot</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#3F6212] border border-[#84CC16]/30 uppercase">
+                      {platform}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#4D7C0F]">
+                    {items.length} items parsed. Verify the quantities and item prices below before running the match engine.
+                    {observedFeesPaise !== null && (
+                      <span className="ml-1 font-semibold text-[#15803D]">
+                        · Observed platform charges: {formatPaise(observedFeesPaise)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsScreenshotSource(false)}
+                  className="text-[11px] font-bold text-[#15803D] hover:underline self-end sm:self-auto shrink-0"
+                >
+                  Dismiss Banner
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-bold text-[#0F3D1E]">What's in your cart?</h2>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-lg font-bold text-[#0F3D1E]">What's in your cart?</h2>
+                  {isCartEmpty ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                      Empty Cart
+                    </span>
+                  ) : isMatchReady ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFCCB] text-[#3F6212] border border-[#84CC16]/40 flex items-center gap-1">
+                      <span>✓</span> Match-Ready
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                      <span>⚠️</span> Needs Prices
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-[#64748B]">Your items stay yours. Only the platform fees are shared.</p>
               </div>
 
@@ -711,15 +764,26 @@ export default function CreateIntentPage() {
                 <div className="space-y-2 text-xs">
                   <div>
                     <span className="block text-[10px] text-[#64748B]">Hostel</span>
-                    <select
-                      value={hostel}
-                      onChange={(e) => setHostel(e.target.value)}
-                      className="w-full bg-white border border-[#E2EBDD] rounded-lg px-3 py-2 font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
-                    >
-                      {(meta?.hostels?.length ? meta.hostels : ['Gargi Hostel', 'Maitreyi Hostel', 'Shri Shanta Nilaya', 'Kasturba Hostel', 'Vaidehi Hostel']).map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
+                    {meta?.hostels?.length ? (
+                      <select
+                        value={hostel}
+                        onChange={(e) => setHostel(e.target.value)}
+                        className="w-full bg-white border border-[#E2EBDD] rounded-lg px-3 py-2 font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
+                      >
+                        {!meta.hostels.includes(hostel) && <option value={hostel}>{hostel || 'Select hostel'}</option>}
+                        {meta.hostels.map((h) => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={hostel}
+                        onChange={(e) => setHostel(e.target.value)}
+                        placeholder="Your hostel name"
+                        className="w-full bg-white border border-[#E2EBDD] rounded-lg px-3 py-2 font-medium text-[#0F3D1E] focus:outline-none focus:border-[#84CC16]"
+                      />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -745,7 +809,7 @@ export default function CreateIntentPage() {
                 </div>
 
                 <p className="text-[10px] text-[#475569] mt-2 pt-2 border-t border-gray-200">
-                  ℹ️ Matching strictly pairs students within the same hostel and time window (enforced by server).
+                  ℹ️ Proximity matching prioritizes your floor, block, and hostel first, widening to nearby hostels only if needed to unlock free delivery.
                 </p>
               </div>
             </div>

@@ -13,8 +13,8 @@ async function start() {
   const database = await connectDatabase()
   const app = createApp()
 
-  app.listen(env.port, () => {
-    console.log(`DropPool API listening on port ${env.port}`)
+  app.listen(env.port, '0.0.0.0', () => {
+    console.log(`DropPool API listening on port ${env.port} (0.0.0.0)`)
     console.log(`Database status: ${database.status}`)
   })
 }

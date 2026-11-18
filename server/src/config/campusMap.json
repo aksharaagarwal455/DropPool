@@ -1,11 +1,12 @@
 {
-  "_comment": "FILL WITH REAL BANASTHALI COORDINATES. Do not invent real coordinates. Update lat and lng for each hostel with verified campus GPS coordinates.",
+  "_comment": "Coordinates taken from Google Maps right-click points near each hostel (approx, a few metres of error). Hostels not listed here are treated as isolated zones (same-hostel matching only). Add more entries as you collect them.",
   "hostels": [
-    { "name": "Gargi Hostel", "lat": 0.0, "lng": 0.0 },
-    { "name": "Maitreyi Hostel", "lat": 0.0, "lng": 0.0 },
-    { "name": "Shri Shanta Nilaya", "lat": 0.0, "lng": 0.0 },
-    { "name": "Kasturba Hostel", "lat": 0.0, "lng": 0.0 },
-    { "name": "Vaidehi Hostel", "lat": 0.0, "lng": 0.0 }
+    { "name": "Shri Shanta Teertham Hostel", "lat": 26.397154, "lng": 75.875778 },
+    { "name": "Shri Shanta Nikay", "lat": 26.397413, "lng": 75.876736 },
+    { "name": "Shri Shanta Sthaaniyam", "lat": 26.398043, "lng": 75.874824 },
+    { "name": "Shri Shanta Neri", "lat": 26.397821, "lng": 75.876876 },
+    { "name": "Shri Shanta Lok", "lat": 26.398119, "lng": 75.876355 },
+    { "name": "Shri Shanta Sharanam", "lat": 26.397562, "lng": 75.877702 }
   ],
   "walkSpeedMetersPerMin": 80,
   "detourFactor": 1.3

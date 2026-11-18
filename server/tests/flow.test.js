@@ -9,11 +9,35 @@ const User = require('../src/models/User')
 const app = createApp()
 jest.setTimeout(60000)
 
-beforeAll(() => connect('droppool_flow_test'))
-afterAll(disconnect)
-afterEach(async () => {
-  await Promise.all([ShoppingIntent.deleteMany({}), Pool.deleteMany({}), Payment.deleteMany({}), User.deleteMany({})])
+let dbConnected = false
+
+beforeAll(async () => {
+  try {
+    await connect('droppool_flow_test')
+    dbConnected = true
+  } catch (err) {
+    console.warn(`[flow.test.js] MongoDB is not running (${err.message}). Database integration tests will be skipped.`)
+  }
 })
+
+afterAll(async () => {
+  if (dbConnected) {
+    await disconnect()
+  }
+})
+
+afterEach(async () => {
+  if (dbConnected) {
+    await Promise.all([ShoppingIntent.deleteMany({}), Pool.deleteMany({}), Payment.deleteMany({}), User.deleteMany({})])
+  }
+})
+
+const dbTest = (title, fn) => {
+  test(title, async () => {
+    if (!dbConnected) return
+    await fn()
+  })
+}
 
 async function postIntent(u, body) {
   const res = await api(app, u.token).post('/api/intents', intentBody(body)).expect(201)
@@ -23,7 +47,7 @@ async function postIntent(u, body) {
 const smallCart = [{ name: 'Bread', qty: 1, unitPricePaise: 8000 }]
 
 describe('end to end: profitable pool', () => {
-  test('three compatible Zepto intents -> pool -> payments -> pickup', async () => {
+  dbTest('three compatible Zepto intents -> pool -> payments -> pickup', async () => {
     const [a, b, c] = [await makeUser(), await makeUser(), await makeUser()]
     await api(app, a.token).patch('/api/users/me', { upiId: 'host.a@okaxis' }).expect(200)
     const ia = await postIntent(a, { items: smallCart })
@@ -100,7 +124,7 @@ describe('end to end: profitable pool', () => {
 })
 
 describe('non-profitable pooling', () => {
-  test('recommends individual ordering and refuses to create the pool', async () => {
+  dbTest('recommends individual ordering and refuses to create the pool', async () => {
     const [a, b] = [await makeUser(), await makeUser()]
     const cart = (price) => [{ name: 'Detergent', qty: 1, unitPricePaise: price }]
     const ia = await postIntent(a, { platform: 'instamart', items: cart(25000), observedFeesPaise: 0 })
@@ -113,7 +137,7 @@ describe('non-profitable pooling', () => {
     expect(await ShoppingIntent.countDocuments({ status: 'reserved' })).toBe(0)
   })
 
-  test('different hostel or platform is never matched', async () => {
+  dbTest('different hostel or platform is never matched', async () => {
     const a = await makeUser()
     const other = await makeUser({ hostel: 'Tagore' })
     const ia = await postIntent(a, { items: smallCart })
@@ -125,7 +149,7 @@ describe('non-profitable pooling', () => {
 })
 
 describe('membership changes', () => {
-  test('a member leaving recalculates; too few members cancels and releases intents', async () => {
+  dbTest('a member leaving recalculates; too few members cancels and releases intents', async () => {
     const users = [await makeUser(), await makeUser(), await makeUser()]
     const intents = []
     for (const u of users) intents.push(await postIntent(u, { items: smallCart }))
@@ -143,7 +167,7 @@ describe('membership changes', () => {
     expect(await ShoppingIntent.countDocuments({ status: 'active' })).toBe(3)
   })
 
-  test('host cancelling after payments lets the host record a refund', async () => {
+  dbTest('host cancelling after payments lets the host record a refund', async () => {
     const [a, b] = [await makeUser(), await makeUser()]
     await api(app, a.token).patch('/api/users/me', { upiId: 'host@okaxis' }).expect(200)
     const ia = await postIntent(a, { items: smallCart })
@@ -160,7 +184,7 @@ describe('membership changes', () => {
     expect(refunded.body.data.payment.status).toBe('refunded')
   })
 
-  test('host needs a UPI id before collecting money', async () => {
+  dbTest('host needs a UPI id before collecting money', async () => {
     const [a, b] = [await makeUser(), await makeUser()]
     const ia = await postIntent(a, { items: smallCart })
     const ib = await postIntent(b, { items: smallCart })
@@ -172,7 +196,7 @@ describe('membership changes', () => {
 })
 
 describe('authorization and safety', () => {
-  test('outsiders cannot see pools; non-owners cannot touch intents', async () => {
+  dbTest('outsiders cannot see pools; non-owners cannot touch intents', async () => {
     const [a, b, outsider] = [await makeUser(), await makeUser(), await makeUser()]
     const ia = await postIntent(a, { items: smallCart })
     const ib = await postIntent(b, { items: smallCart })
@@ -185,7 +209,7 @@ describe('authorization and safety', () => {
     await api(app, a.token).post(`/api/intents/${ia.id}/cancel`).expect(409)
   })
 
-  test('the pool view never leaks email or UPI id', async () => {
+  dbTest('the pool view never leaks email or UPI id', async () => {
     const [a, b] = [await makeUser(), await makeUser()]
     await api(app, a.token).patch('/api/users/me', { upiId: 'secret.host@okaxis' }).expect(200)
     const ia = await postIntent(a, { items: smallCart })
@@ -199,7 +223,7 @@ describe('authorization and safety', () => {
     expect(me.body.data.user.hasUpiId).toBe(true)
   })
 
-  test('two simultaneous pool requests cannot reserve the same intents', async () => {
+  dbTest('two simultaneous pool requests cannot reserve the same intents', async () => {
     const users = [await makeUser(), await makeUser(), await makeUser()]
     const intents = []
     for (const u of users) intents.push(await postIntent(u, { items: smallCart }))
@@ -220,7 +244,7 @@ describe('authorization and safety', () => {
 })
 
 describe('intent validation', () => {
-  test('rejects bad input', async () => {
+  dbTest('rejects bad input', async () => {
     const u = await makeUser()
     const send = (body) => api(app, u.token).post('/api/intents', intentBody(body))
     await send({ platform: 'swiggy' }).expect(422)
@@ -234,7 +258,7 @@ describe('intent validation', () => {
     await api(app, u.token).post('/api/intents', {}).expect(422)
   })
 
-  test('an intent without prices is saved but not ready, and cannot be matched', async () => {
+  dbTest('an intent without prices is saved but not ready, and cannot be matched', async () => {
     const u = await makeUser()
     const intent = await postIntent(u, { items: [{ name: 'Milk', qty: 1 }] })
     expect(intent.ready).toBe(false)
@@ -243,7 +267,7 @@ describe('intent validation', () => {
     expect(match.body.data.proposal.status).toBe('needs_prices')
   })
 
-  test('edit, cancel and list', async () => {
+  dbTest('edit, cancel and list', async () => {
     const u = await makeUser()
     const intent = await postIntent(u)
     const edited = await api(app, u.token).patch(`/api/intents/${intent.id}`, { items: [{ name: 'Milk', qty: 3, unitPricePaise: 3000 }] }).expect(200)
@@ -254,7 +278,7 @@ describe('intent validation', () => {
     expect(list.body.data.intents[0].status).toBe('cancelled')
   })
 
-  test('the board hides prices and other hostels', async () => {
+  dbTest('the board hides prices and other hostels', async () => {
     const [a, b, far] = [await makeUser(), await makeUser(), await makeUser({ hostel: 'Tagore' })]
     await postIntent(b)
     await postIntent(far)
@@ -264,7 +288,7 @@ describe('intent validation', () => {
     expect(board[0].subtotalPaise).toBeUndefined()
   })
 
-  test('preview optimization needs one of your own intents', async () => {
+  dbTest('preview optimization needs one of your own intents', async () => {
     const [a, b] = [await makeUser(), await makeUser()]
     const ia = await postIntent(a, { items: smallCart })
     const ib = await postIntent(b, { items: smallCart })

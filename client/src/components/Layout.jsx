@@ -1,10 +1,21 @@
 import { Link } from 'react-router-dom'
 import Navbar from './Navbar'
 import MobileNav from './MobileNav'
+import { useAuth } from '../context/AuthContext'
 
 export default function Layout({ children, hidePromise = false, meta = null }) {
+  const { isServerWaking } = useAuth()
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAF6] text-[#0F3D1E]">
+      {isServerWaking && (
+        <div className="bg-[#0F3D1E] text-[#ECFCCB] px-4 py-2 text-xs font-bold text-center flex items-center justify-center gap-2 border-b border-[#84CC16]/40 animate-pulse">
+          <span>⏳</span>
+          <span>
+            Connecting to DropPool backend on Render… First request wakes the free-tier service (takes ~20-30s).
+          </span>
+        </div>
+      )}
       <Navbar meta={meta} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 mb-16 md:mb-6">

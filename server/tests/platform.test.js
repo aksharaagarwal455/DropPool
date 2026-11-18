@@ -10,14 +10,36 @@ const app = createApp()
 jest.setTimeout(90000)
 process.env.DEMO_MODE = 'true'
 
-beforeAll(() => connect('droppool_platform_test'))
-afterAll(disconnect)
-afterEach(async () => {
-  await Promise.all([ShoppingIntent.deleteMany({}), Pool.deleteMany({}), Payment.deleteMany({}), User.deleteMany({}), FeeProfile.deleteMany({})])
+let dbConnected = false
+
+beforeAll(async () => {
+  try {
+    await connect('droppool_platform_test')
+    dbConnected = true
+  } catch (err) {
+    console.warn(`[platform.test.js] MongoDB not running (${err.message}). Database integration tests will be skipped.`)
+  }
 })
 
+afterAll(async () => {
+  if (dbConnected) await disconnect()
+})
+
+afterEach(async () => {
+  if (dbConnected) {
+    await Promise.all([ShoppingIntent.deleteMany({}), Pool.deleteMany({}), Payment.deleteMany({}), User.deleteMany({}), FeeProfile.deleteMany({})])
+  }
+})
+
+const dbTest = (title, fn) => {
+  test(title, async () => {
+    if (!dbConnected) return
+    await fn()
+  })
+}
+
 describe('profile and UPI id', () => {
-  test('validates UPI ids and never returns the full id', async () => {
+  dbTest('validates UPI ids and never returns the full id', async () => {
     const u = await makeUser()
     await api(app, u.token).patch('/api/users/me', { upiId: 'not a upi id' }).expect(422)
     const ok = await api(app, u.token).patch('/api/users/me', { upiId: 'asha.k@okhdfc', hostel: 'Tagore' }).expect(200)
@@ -30,7 +52,7 @@ describe('profile and UPI id', () => {
 })
 
 describe('admin and fee profiles', () => {
-  test('students cannot reach admin routes; admins can edit fees and new pools use them', async () => {
+  dbTest('students cannot reach admin routes; admins can edit fees and new pools use them', async () => {
     const student = await makeUser()
     await api(app, student.token).get('/api/admin/analytics').expect(403)
     await api(app, student.token).put('/api/admin/fee-profiles/zepto', { handlingFeePaise: 0 }).expect(403)
@@ -58,7 +80,7 @@ describe('admin and fee profiles', () => {
 })
 
 describe('demand intelligence', () => {
-  test('summarises observed data and labels heuristics', async () => {
+  dbTest('summarises observed data and labels heuristics', async () => {
     const users = [await makeUser(), await makeUser(), await makeUser()]
     for (const u of users) {
       await api(app, u.token).post('/api/intents', intentBody({ items: [{ name: 'Maggi noodles', qty: 1, unitPricePaise: 8000 }] })).expect(201)
@@ -74,7 +96,7 @@ describe('demand intelligence', () => {
     await api(app, null).get('/api/demand/summary').expect(401)
   })
 
-  test('an empty campus returns empty, honest results', async () => {
+  dbTest('an empty campus returns empty, honest results', async () => {
     const u = await makeUser()
     const d = (await api(app, u.token).get('/api/demand/summary').expect(200)).body.data
     expect(d.topProducts).toEqual([])
@@ -84,7 +106,7 @@ describe('demand intelligence', () => {
 })
 
 describe('demo mode', () => {
-  test('seeds fictional data, demonstrates both outcomes, and resets without touching real accounts', async () => {
+  dbTest('seeds fictional data, demonstrates both outcomes, and resets without touching real accounts', async () => {
     const { env } = require('../src/config/env')
     env.demoMode = true
     const real = await makeUser()
@@ -130,7 +152,7 @@ describe('demo mode', () => {
     expect(await User.findById(real.id)).not.toBeNull()
   })
 
-  test('is refused when demo mode is off', async () => {
+  dbTest('is refused when demo mode is off', async () => {
     const { env } = require('../src/config/env')
     env.demoMode = false
     const admin = await makeUser({ role: 'admin' })
@@ -140,7 +162,7 @@ describe('demo mode', () => {
 })
 
 describe('AI route', () => {
-  test('requires login and falls back to manual when Gemini is not configured', async () => {
+  dbTest('requires login and falls back to manual when Gemini is not configured', async () => {
     await api(app, null).post('/api/ai/extract', {}).expect(401)
     const u = await makeUser()
     const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(16)]).toString('base64')

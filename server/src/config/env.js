@@ -14,6 +14,13 @@ function parseCollegeEmailDomains(value) {
     .filter(Boolean)
 }
 
+function parseOrigins(value) {
+  return String(value || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+}
+
 function resolveEnv(source = process.env) {
   const nodeEnv = source.NODE_ENV || 'development'
   const jwtSecret = source.JWT_SECRET || ''
@@ -33,6 +40,7 @@ function resolveEnv(source = process.env) {
     jwtSecret: jwtSecret || 'dev-only-not-for-production',
     jwtExpiresIn: source.JWT_EXPIRES_IN || '12h',
     clientOrigin: source.CLIENT_ORIGIN || 'http://localhost:5173',
+    clientOrigins: parseOrigins(source.CLIENT_ORIGIN || 'http://localhost:5173'),
     collegeEmailDomains: parseCollegeEmailDomains(source.COLLEGE_EMAIL_DOMAINS),
     demoMode: source.DEMO_MODE === 'true',
     geminiApiKey: source.GEMINI_API_KEY || '',

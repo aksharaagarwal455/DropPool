@@ -197,7 +197,7 @@ export default function ProfilePage() {
                     type="text"
                     value={hostel}
                     onChange={(e) => setHostel(e.target.value)}
-                    placeholder="e.g. Gargi Hostel"
+                    placeholder="Your hostel name"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-primary-800 focus:outline-none"
                   />
                 )}
@@ -237,12 +237,22 @@ export default function ProfilePage() {
                   <label className="block text-xs font-bold text-gray-700">
                     Host UPI ID (for receiving peer shares)
                   </label>
-                  {user?.hasUpiId && (
-                    <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                  {user?.hasUpiId ? (
+                    <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
                       ✓ Active: {user.upiIdMasked}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      Required to host pools
                     </span>
                   )}
                 </div>
+
+                {!user?.hasUpiId && (
+                  <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                    💡 <strong>Hosting pools requires a UPI ID</strong> so other students can send you their share via UPI QR or deep link. If you only plan to join pools hosted by peers, a UPI ID is optional.
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <input

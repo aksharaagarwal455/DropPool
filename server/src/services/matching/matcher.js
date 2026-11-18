@@ -405,7 +405,7 @@ function proposeGroup({
       components.time * w.time +
       components.readiness * w.readiness +
       components.benefit * w.benefit) /
-      denom,
+    denom,
   )
 
   const pooledSubtotal = selected.trial.reduce((sum, m) => sum + (m.subtotalPaise || 0), 0)
