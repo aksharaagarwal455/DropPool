@@ -80,12 +80,13 @@ export default function PoolDetailsPage() {
     if (!isPolling) setActionError('')
     try {
       const data = await Api.pools.get(id)
+      const poolData = data?.pool || data
       if (isMountedRef.current) {
-        setPool(data)
+        setPool(poolData)
         setPoolError('')
         // Generate QR code if upiUri exists
-        if (data.myPayment?.upiUri) {
-          QRCode.toDataURL(data.myPayment.upiUri, { width: 190, margin: 1 })
+        if (poolData?.myPayment?.upiUri) {
+          QRCode.toDataURL(poolData.myPayment.upiUri, { width: 190, margin: 1 })
             .then((url) => {
               if (isMountedRef.current) setQrDataUrl(url)
             })
@@ -143,7 +144,7 @@ export default function PoolDetailsPage() {
     setActionError('')
     try {
       const updated = await Api.pools.confirm(pool.id)
-      setPool(updated)
+      setPool(updated?.pool || updated)
     } catch (err) {
       setActionError(errorMessage(err))
     } finally {
@@ -160,7 +161,7 @@ export default function PoolDetailsPage() {
     setActionError('')
     try {
       const updated = await Api.pools.leave(pool.id)
-      setPool(updated)
+      setPool(updated?.pool || updated)
     } catch (err) {
       setActionError(errorMessage(err))
     } finally {
@@ -181,7 +182,7 @@ export default function PoolDetailsPage() {
     try {
       const paise = rupeesToPaise(rupees)
       const updated = await Api.pools.actualTotal(pool.id, paise)
-      setPool(updated)
+      setPool(updated?.pool || updated)
       setActualTotalRupees('')
     } catch (err) {
       setActionError(errorMessage(err))
@@ -196,7 +197,7 @@ export default function PoolDetailsPage() {
     setActionError('')
     try {
       const updated = await Api.pools.status(pool.id, { to: toStatus, ...extraData })
-      setPool(updated)
+      setPool(updated?.pool || updated)
       setShowPickupModal(false)
       setShowCancelModal(false)
     } catch (err) {
